@@ -6,6 +6,16 @@ Codemirror 6 vs Codemirror 5
 I'm going ahead with codemirror 5, codemirror 6 seems
 completely different
 useRef vs useState vs useContext
+bodyParser and express.json()
+http vs express
+import syntax in JavaScript: common js vs es
+async functions
+websockets
+node js event loop
+React hooks
+Optional chaining
+Closures
+webpack
 
 What happens
 ------------
