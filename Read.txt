@@ -1,3 +1,7 @@
 What does BrowserRouter do?
 Why the heirarchy that you have follwed while using it?
 Packages: uuid
+Learn about arrow functions
+Codemirror 6 vs Codemirror 5
+I'm going ahead with codemirror 5, codemirror 6 seems
+completely different

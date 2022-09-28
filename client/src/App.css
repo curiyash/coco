@@ -14,6 +14,20 @@
   max-width: 90%;
 }
 
+/* EditorPage */
+.editor-main {
+  display: flex;
+}
+
+.aside {
+  flex: 1;
+  max-width: 210px;
+}
+
+.editor {
+  flex: 2;
+}
+
 footer {
   position: fixed;
   bottom: 0;

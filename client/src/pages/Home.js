@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import {v4 as uuid} from "uuid";
 import toast from 'react-hot-toast';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 const Home = () => {
     const [room_id, setRoom_id] = useState("");
     const [username, setUsername] = useState("");
+    const navigate = useNavigate();
 
     const createNewRoom = (e) => {
         e.preventDefault();
@@ -12,6 +14,26 @@ const Home = () => {
         setRoom_id(id);
         // console.log(id);
         toast.success("Created a new room");
+    }
+
+    const joinRoom = (e) => {
+        if (!room_id || !username) {
+            toast.error("Username and Room ID is required");
+            return;
+        }
+
+        // Can be done with DB - Redux Store, MongoDB
+        navigate(`/editor/${room_id}`, {
+            state: {
+                username,
+            }
+        })
+    }
+
+    const handleInputEnter = (e) => {
+        if (e.code==="Enter") {
+            joinRoom();
+        }
     }
 
     return (
@@ -26,6 +48,7 @@ const Home = () => {
                         placeholder='Enter Room ID'
                         value={room_id}
                         onChange={(e) => {setRoom_id(e.target.value)}}
+                        onKeyUp={handleInputEnter}
                     >
                     </input>
                     <input
@@ -34,9 +57,10 @@ const Home = () => {
                         placeholder='Username'
                         value={username}
                         onChange={(e) => {setUsername(e.target.value)}}
+                        onKeyUp={handleInputEnter}
                     >
                     </input>
-                    <button className='btn join-btn'>Join</button>
+                    <button onClick={joinRoom} className='btn join-btn'>Join</button>
                     <span className='create-info'>
                         <a onClick={createNewRoom} href="" className="create-new-room">
                             Create New Room &nbsp;
