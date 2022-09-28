@@ -5,3 +5,10 @@ Learn about arrow functions
 Codemirror 6 vs Codemirror 5
 I'm going ahead with codemirror 5, codemirror 6 seems
 completely different
+useRef vs useState vs useContext
+
+What happens
+------------
+1) On refreshing the page
+2) React.StrictMode caused the useEffect to run twice
+Why?

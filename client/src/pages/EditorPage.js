@@ -10,27 +10,28 @@ const EditorPage = () => {
     ]);
 
   return (
-    <div className="editor-main">
+    <div className="mainWrap">
         <div className='aside'>
-            <div className='inner'>
+            <div className='asideInner'>
                 <div className='logo'>
                     Logo Goes Here
                 </div>
             </div>
             <h3>Connected</h3>
-            <div className='client-list'>
+            <div className='clientsList'>
                 {clients.map((client) => {
                     return <Client key={client.socketId} username={client.username}/>
                 })}
             </div>
-            <button id="copy-btn">Copy Room ID</button>
-            <button id="leave-btn">Leave the Room</button>
+            <button className="btn copyBtn">Copy Room ID</button>
+            <button className="btn leaveBtn">Leave the Room</button>
         </div>
-        <div className='editor'>
+        <div className='editorWrap'>
+            {console.log("Here")}
             <Editor />
         </div>
     </div>
   )
 }
 
-export default EditorPage
+export default EditorPage;
