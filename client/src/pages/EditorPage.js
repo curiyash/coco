@@ -85,7 +85,7 @@ const EditorPage = () => {
 
             // On filename change
             socketRef.current.on('filename change', ({fileName}) => {
-                console.log("Got change");
+                toast.success(`Filename changed to ${fileName}`);
                 setFileName(fileName);
             })
         }
@@ -144,8 +144,14 @@ const EditorPage = () => {
     }
 
     function updateFileName(e){
-        // Emit the event
-        socketRef.current.emit('filename change', {room_id, fileName: e.target.value});
+        setFileName(e.target.value);
+    }
+
+    function emitFileName(e){
+        if (e.key==='Enter' || e.keyCode===13){
+            // Emit the event
+            socketRef.current.emit('filename change', {room_id, fileName});
+        }
     }
 
     <Navigate></Navigate>
@@ -157,7 +163,7 @@ const EditorPage = () => {
                 <div className='logo'>
                     Logo Goes Here
                 </div>
-                <input type="text" value={fileName} onChange={updateFileName}></input>
+                <input type="text" value={fileName} onChange={updateFileName} onKeyUp={emitFileName}></input>
             </div>
             <h3>Connected</h3>
             <div className='clientsList'>
