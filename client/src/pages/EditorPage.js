@@ -8,19 +8,22 @@ import { useLocation, useNavigate, Navigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast';
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
+import FileSaver from 'file-saver';
+import { mimeTypes } from './mimeTypes'
 
 const EditorPage = () => {
     // useLocation: Like useState but for current URL
     // Just for grabbing info from current URL
     const options = [
-        'javascript', 'python', 'erlang'
+        'textfile', 'javascript', 'python', 'erlang'
     ];
     const defaultOption = options[0];
     const location = useLocation();
     const codeRef = useRef(null);
     const { room_id } = useParams();
     const [clients, setClients] = useState([]);
-    const [mode, setMode] = useState('javascript');
+    const [mode, setMode] = useState('textfile');
+    const [fileName, setFileName] = useState("Untitled.txt");
     const reactNavigator = useNavigate();
 
     // Initialize socket
@@ -79,6 +82,12 @@ const EditorPage = () => {
                     code
                 });
             })
+
+            // On filename change
+            socketRef.current.on('filename change', ({fileName}) => {
+                console.log("Got change");
+                setFileName(fileName);
+            })
         }
         init();
         // Always clear the listeners, else it causes memory leak
@@ -114,6 +123,31 @@ const EditorPage = () => {
         return <Navigate to="/"></Navigate>
     }
 
+    function downloadCode(e){
+        e.preventDefault();
+        console.log(fileName);
+        const code = codeRef.current;
+        if (code===null || code===""){
+            toast.error("There is no code!");
+            return;
+        }
+
+        const mime = mimeTypes[mode];
+        let blob = "";
+        if (mime!==undefined){
+            blob = new Blob([code], {type: `application/octet-stream;charset=utf-8`});
+        } else{
+            console.log(`Downloading as ${mimeTypes[mode]}`);
+            blob = new Blob([code], {type: `${mimeTypes[mode]};charset=utf-8`});
+        }
+        FileSaver.saveAs(blob, fileName);
+    }
+
+    function updateFileName(e){
+        // Emit the event
+        socketRef.current.emit('filename change', {room_id, fileName: e.target.value});
+    }
+
     <Navigate></Navigate>
 
   return (
@@ -123,6 +157,7 @@ const EditorPage = () => {
                 <div className='logo'>
                     Logo Goes Here
                 </div>
+                <input type="text" value={fileName} onChange={updateFileName}></input>
             </div>
             <h3>Connected</h3>
             <div className='clientsList'>
@@ -133,6 +168,7 @@ const EditorPage = () => {
             <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" />
             <button className="btn copyBtn" onClick={copyRoomID}>Copy Room ID</button>
             <button className="btn leaveBtn" onClick={leaveRoom}>Leave the Room</button>
+            <button className="btn" onClick={downloadCode}>Download</button>
         </div>
         <div className='editorWrap'>
             {console.log("Here")}

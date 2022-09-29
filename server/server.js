@@ -92,6 +92,15 @@ io.on('connection', (socket) => {
 			code
 		})
 	})
+
+	// filename changes
+	socket.on('filename change', ({room_id, fileName}) => {
+		console.log("Here");
+		console.log(fileName);
+		io.in(room_id).emit('filename change', {
+			fileName
+		})
+	})
 });
 
 httpServer.listen(5000, () => {

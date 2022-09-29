@@ -4,6 +4,11 @@ Need
 2) Cursor position on Undo and Redo
 3) Multiple cursors showing where each user is
 4) Font size, color
-5) Language choice
-6) Download code
+5) Language choice - Done
+6) Download code and Upload code
+Do not emit on every character change. Emit on enter
 7) Ask for suggestions
+8) Authorization
+9) Multiple themes
+10) Chatting feature - different server
+11) Clean code and console.logs
