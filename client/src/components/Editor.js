@@ -7,7 +7,7 @@ import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import { Socket } from 'socket.io-client';
 
-const Editor = ({socketRef, room_id}) => {
+const Editor = ({socketRef, room_id, onCodeChange}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
 
@@ -29,6 +29,7 @@ const Editor = ({socketRef, room_id}) => {
                 const { origin } = changes;
                 // get the current code in editor
                 const code = instance.getValue();
+                onCodeChange(code);
                 // If origin isn't setValue, then and then only
                 // Why? Else this causes an infinite loop!
                 if (origin!=='setValue'){

@@ -69,6 +69,14 @@ io.on('connection', (socket) => {
 			code
 		})
 	})
+
+	socket.on('sync code', ({socket_id, code}) => {
+		// Emit this code to every socket except the one
+		// sending. Why? Causes issues with cursor position
+		io.to(socket_id).emit('code change', {
+			code
+		})
+	})
 });
 
 httpServer.listen(5000, () => {

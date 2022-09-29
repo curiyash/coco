@@ -1,0 +1,8 @@
+Need
+----
+1) Undo and Redo changes made by the current user only
+2) Cursor position on Undo and Redo
+3) Multiple cursors showing where each user is
+4) Font size, color
+5) Language choice
+6) Download code

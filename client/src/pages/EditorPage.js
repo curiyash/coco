@@ -11,6 +11,7 @@ const EditorPage = () => {
     // useLocation: Like useState but for current URL
     // Just for grabbing info from current URL
     const location = useLocation();
+    const codeRef = useRef(null);
     const { room_id } = useParams();
     const [clients, setClients] = useState([]);
     const reactNavigator = useNavigate();
@@ -46,6 +47,10 @@ const EditorPage = () => {
                     toast.success(`${username} has joined the room`);
                 }
                 setClients(clients);
+                socketRef.current.emit('sync code', {
+                    socket_id: socket_id,
+                    code: codeRef.current
+                });
             });
 
             // For disconnecting
@@ -106,7 +111,7 @@ const EditorPage = () => {
         </div>
         <div className='editorWrap'>
             {console.log("Here")}
-            <Editor socketRef={socketRef} room_id={room_id}/>
+            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}}/>
         </div>
     </div>
   )
