@@ -12,10 +12,7 @@ const EditorPage = () => {
     // Just for grabbing info from current URL
     const location = useLocation();
     const { room_id } = useParams();
-    const [clients, setClients] = useState([
-        {socketId: 1, username: "ABC"},
-        {socketId: 2, username: "XYZ"},
-    ]);
+    const [clients, setClients] = useState([]);
     const reactNavigator = useNavigate();
 
     // Initialize socket
@@ -37,13 +34,37 @@ const EditorPage = () => {
 
             // Ask to join in
             // We had passed username in state of location from Home
-            // socketRef.current.emit(ACTIONS.JOIN, {
-            //     room_id: location.room_id,
-            //     username: location.state?.username
-            // });
-            console.log(socketRef);
+            socketRef.current.emit('join', {
+                room_id: room_id,
+                username: location.state?.username
+            });
+            toast.success("Aftermath");
+
+            // Toast after a user joins in
+            socketRef.current.on('joined', ({clients, username, socket_id}) => {
+                if (username!==location.state.username){
+                    toast.success(`${username} has joined the room`);
+                }
+                setClients(clients);
+            });
+
+            // For disconnecting
+            socketRef.current.on('disconnected', ({socket_id, username}) => {
+                toast.success(`${username} has left the room`);
+                setClients((prev) => {
+                    return prev.filter(
+                        (client) => client.socket_id!==socket_id
+                    )
+                })
+            })
         }
         init();
+        // Always clear the listeners, else it causes memory leak
+        return () => {
+            socketRef.current.disconnect();
+            socketRef.current.off('joined');
+            socketRef.current.off('disconnected');
+        }
     }, []);
 
     if (!location.state) {
