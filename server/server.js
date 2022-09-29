@@ -61,6 +61,14 @@ io.on('connection', (socket) => {
 		delete userSocketMap[socket.id];
 		socket.leave();
 	})
+
+	socket.on('code change', ({room_id, code}) => {
+		// Emit this code to every socket except the one
+		// sending. Why? Causes issues with cursor position
+		socket.in(room_id).emit('code change', {
+			code
+		})
+	})
 });
 
 httpServer.listen(5000, () => {
