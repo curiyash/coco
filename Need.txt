@@ -6,3 +6,4 @@ Need
 4) Font size, color
 5) Language choice
 6) Download code
+7) Ask for suggestions

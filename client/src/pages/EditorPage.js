@@ -6,14 +6,21 @@ import { initSocket } from '../socket'
 import ACTIONS from "../Actions";
 import { useLocation, useNavigate, Navigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import Dropdown from 'react-dropdown';
+import 'react-dropdown/style.css';
 
 const EditorPage = () => {
     // useLocation: Like useState but for current URL
     // Just for grabbing info from current URL
+    const options = [
+        'javascript', 'python', 'erlang'
+    ];
+    const defaultOption = options[0];
     const location = useLocation();
     const codeRef = useRef(null);
     const { room_id } = useParams();
     const [clients, setClients] = useState([]);
+    const [mode, setMode] = useState('javascript');
     const reactNavigator = useNavigate();
 
     // Initialize socket
@@ -62,6 +69,16 @@ const EditorPage = () => {
                     )
                 })
             })
+
+            // On mode change
+            socketRef.current.on('mode change', ({newMode, code}) => {
+                toast.success(`Switched to ${newMode}`);
+                setMode(newMode);
+                socketRef.current.emit('sync code after mode change', {
+                    room_id,
+                    code
+                });
+            })
         }
         init();
         // Always clear the listeners, else it causes memory leak
@@ -86,6 +103,13 @@ const EditorPage = () => {
         reactNavigator("/");
     }
 
+    function _onSelect (option) {
+        setMode(option.label);
+        const newMode = option.label;
+        console.log(option.label);
+        socketRef.current.emit('mode change', {newMode, room_id, codeRef});
+    }
+
     if (!location.state) {
         return <Navigate to="/"></Navigate>
     }
@@ -106,12 +130,13 @@ const EditorPage = () => {
                     return <Client key={client.socketId} username={client.username}/>
                 })}
             </div>
+            <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" />
             <button className="btn copyBtn" onClick={copyRoomID}>Copy Room ID</button>
             <button className="btn leaveBtn" onClick={leaveRoom}>Leave the Room</button>
         </div>
         <div className='editorWrap'>
             {console.log("Here")}
-            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}}/>
+            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode}/>
         </div>
     </div>
   )

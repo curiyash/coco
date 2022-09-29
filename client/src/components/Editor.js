@@ -2,21 +2,38 @@ import React, { useEffect, useRef } from 'react';
 import Codemirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/dracula.css';
-import 'codemirror/mode/javascript/javascript';
+
+// Language modes
+import 'codemirror/mode/javascript/javascript.js'
+import 'codemirror/mode/ruby/ruby.js'
+import 'codemirror/mode/swift/swift.js'
+import 'codemirror/mode/clojure/clojure.js'
+import 'codemirror/mode/python/python.js'
+import 'codemirror/mode/php/php.js'
+import 'codemirror/mode/erlang/erlang.js'
+import 'codemirror/mode/coffeescript/coffeescript.js'
+import 'codemirror/mode/crystal/crystal.js'
+
 import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import { Socket } from 'socket.io-client';
+import toast from 'react-hot-toast';
 
-const Editor = ({socketRef, room_id, onCodeChange}) => {
+const Editor = ({socketRef, room_id, onCodeChange, mode}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
+    console.log(mode);
 
     useEffect(() => {
         async function init(){
+            const prev = document.getElementsByClassName('CodeMirror')[0];
+            if (prev!==undefined){
+                prev.remove();
+            }
             editor.current = Codemirror.fromTextArea(
                 document.getElementById('realtime-editor'),
                 {
-                    mode: { name: 'javascript', json: true },
+                    mode: { name: mode, json: true },
                     theme: 'dracula',
                     autoCloseTags: true,
                     autoCloseBrackets: true,
@@ -42,7 +59,7 @@ const Editor = ({socketRef, room_id, onCodeChange}) => {
             })
         }
         init();
-    }, []);
+    }, [mode]);
 
     // useEffect for listening to a code change
     useEffect(() => {

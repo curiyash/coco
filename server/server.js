@@ -71,9 +71,24 @@ io.on('connection', (socket) => {
 	})
 
 	socket.on('sync code', ({socket_id, code}) => {
-		// Emit this code to every socket except the one
-		// sending. Why? Causes issues with cursor position
+		// Emit code to specific socket
 		io.to(socket_id).emit('code change', {
+			code
+		})
+	})
+
+	socket.on('sync code after mode change', ({room_id, code}) => {
+		// Emit code to specific socket
+		io.in(room_id).emit('code change', {
+			code
+		})
+	})
+
+	socket.on('mode change', ({room_id, newMode, codeRef}) => {
+		const code = codeRef.current;
+		console.log(code);
+		io.in(room_id).emit('mode change', {
+			newMode,
 			code
 		})
 	})
