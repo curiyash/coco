@@ -12,4 +12,4 @@ Do not emit on every character change. Emit on enter
 9) Multiple themes
 10) Chatting feature - different server
 11) Clean code and console.logs
-12) Last change made by
+12) Last change made by - View changes between snapshots

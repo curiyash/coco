@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import Client from '../components/Client'
 import { useState } from 'react'
 import Editor from '../components/Editor'
+import {v4 as uuid} from "uuid";
 import { initSocket } from '../socket'
 import ACTIONS from "../Actions";
 import { useLocation, useNavigate, Navigate, useParams } from 'react-router-dom';
@@ -10,6 +11,8 @@ import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
 import FileSaver from 'file-saver';
 import { mimeTypes } from './mimeTypes'
+import { addUser, getRef, leftUser } from '../firebase'
+import { onSnapshot } from 'firebase/firestore';
 
 const EditorPage = () => {
     // useLocation: Like useState but for current URL
@@ -24,6 +27,7 @@ const EditorPage = () => {
     const [clients, setClients] = useState([]);
     const [mode, setMode] = useState('textfile');
     const [fileName, setFileName] = useState("Untitled.txt");
+    const user_id = uuid();
     const reactNavigator = useNavigate();
 
     // Initialize socket
@@ -45,6 +49,7 @@ const EditorPage = () => {
 
             // Ask to join in
             // We had passed username in state of location from Home
+            addUser(room_id, user_id, location.state?.username)
             socketRef.current.emit('join', {
                 room_id: room_id,
                 username: location.state?.username
@@ -52,16 +57,17 @@ const EditorPage = () => {
             toast.success("Aftermath");
 
             // Toast after a user joins in
-            socketRef.current.on('joined', ({clients, username, socket_id}) => {
-                if (username!==location.state.username){
-                    toast.success(`${username} has joined the room`);
-                }
-                setClients(clients);
-                socketRef.current.emit('sync code', {
-                    socket_id: socket_id,
-                    code: codeRef.current
-                });
-            });
+            getUsers();
+            // socketRef.current.on('joined', ({clients, username, socket_id}) => {
+            //     if (username!==location.state.username){
+            //         toast.success(`${username} has joined the room`);
+            //     }
+            //     setClients(clients);
+            //     socketRef.current.emit('sync code', {
+            //         socket_id: socket_id,
+            //         code: codeRef.current
+            //     });
+            // });
 
             // For disconnecting
             socketRef.current.on('disconnected', ({socket_id, username}) => {
@@ -88,13 +94,33 @@ const EditorPage = () => {
                 toast.success(`Filename changed to ${fileName}`);
                 setFileName(fileName);
             })
+
+            window.addEventListener('beforeunload', async function(e){
+                e.preventDefault();
+                await leftUser(room_id, user_id);
+            })
         }
+
+        let unsubscribe;
+        async function getUsers(){
+            const ref = await getRef("users", room_id);
+            // if (username!==location.state.username){
+            //     toast.success(`${username} has joined the room`);
+            // }
+            unsubscribe = onSnapshot(ref, (doc) => {
+                const c = doc.data();
+                setClients(Object.values(c));
+            })
+        }
+
         init();
+        getUsers();
         // Always clear the listeners, else it causes memory leak
         return () => {
             socketRef.current.disconnect();
             socketRef.current.off('joined');
             socketRef.current.off('disconnected');
+            unsubscribe();
         }
     }, []);
 
@@ -108,7 +134,8 @@ const EditorPage = () => {
         }
     }
 
-    function leaveRoom(){
+    async function leaveRoom(){
+        await leftUser(room_id, user_id);
         reactNavigator("/");
     }
 
@@ -167,8 +194,8 @@ const EditorPage = () => {
             </div>
             <h3>Connected</h3>
             <div className='clientsList'>
-                {clients.map((client) => {
-                    return <Client key={client.socketId} username={client.username}/>
+                {clients.map((client, id) => {
+                    return <Client key={id} username={client}/>
                 })}
             </div>
             <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" />
@@ -178,7 +205,7 @@ const EditorPage = () => {
         </div>
         <div className='editorWrap'>
             {console.log("Here")}
-            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode}/>
+            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={user_id}/>
         </div>
     </div>
   )
