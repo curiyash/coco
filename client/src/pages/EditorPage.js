@@ -27,8 +27,10 @@ const EditorPage = () => {
     const [clients, setClients] = useState([]);
     const [mode, setMode] = useState('textfile');
     const [fileName, setFileName] = useState("Untitled.txt");
-    const user_id = uuid();
     const reactNavigator = useNavigate();
+    const left = useRef(263);
+    const top = useRef(24);
+    const lineHeightRef = useRef("24px");
 
     // Initialize socket
     // useRef: does not rerender component when state changes
@@ -49,7 +51,7 @@ const EditorPage = () => {
 
             // Ask to join in
             // We had passed username in state of location from Home
-            addUser(room_id, user_id, location.state?.username)
+            addUser(room_id, location.state?.user_id, location.state?.username, left.current, top.current)
             socketRef.current.emit('join', {
                 room_id: room_id,
                 username: location.state?.username
@@ -57,7 +59,8 @@ const EditorPage = () => {
             toast.success("Aftermath");
 
             // Toast after a user joins in
-            getUsers();
+            // POTENTIAL ISSUE
+            // getUsers();
             // socketRef.current.on('joined', ({clients, username, socket_id}) => {
             //     if (username!==location.state.username){
             //         toast.success(`${username} has joined the room`);
@@ -70,14 +73,14 @@ const EditorPage = () => {
             // });
 
             // For disconnecting
-            socketRef.current.on('disconnected', ({socket_id, username}) => {
-                toast.success(`${username} has left the room`);
-                setClients((prev) => {
-                    return prev.filter(
-                        (client) => client.socket_id!==socket_id
-                    )
-                })
-            })
+            // socketRef.current.on('disconnected', ({socket_id, username}) => {
+            //     toast.success(`${username} has left the room`);
+            //     setClients((prev) => {
+            //         return prev.filter(
+            //             (client) => client.socket_id!==socket_id
+            //         )
+            //     })
+            // })
 
             // On mode change
             socketRef.current.on('mode change', ({newMode, code}) => {
@@ -96,8 +99,9 @@ const EditorPage = () => {
             })
 
             window.addEventListener('beforeunload', async function(e){
+                console.log("Refreshed");
+                await leftUser(room_id, location.state?.user_id);
                 e.preventDefault();
-                await leftUser(room_id, user_id);
             })
         }
 
@@ -107,9 +111,11 @@ const EditorPage = () => {
             // if (username!==location.state.username){
             //     toast.success(`${username} has joined the room`);
             // }
+            console.log("Ref");
+            console.log(ref);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
-                setClients(Object.values(c));
+                setClients(c);
             })
         }
 
@@ -135,7 +141,7 @@ const EditorPage = () => {
     }
 
     async function leaveRoom(){
-        await leftUser(room_id, user_id);
+        await leftUser(room_id, location.state?.user_id);
         reactNavigator("/");
     }
 
@@ -194,8 +200,15 @@ const EditorPage = () => {
             </div>
             <h3>Connected</h3>
             <div className='clientsList'>
-                {clients.map((client, id) => {
-                    return <Client key={id} username={client}/>
+                {Object.entries(clients).map((client, id) => {
+                    console.log(client[0]);
+                    const c = client[1];
+                    console.log(c);
+                    if (client[0]!==location.state?.user_id){
+                        return <Client key={id} username={c.username} tooltip={true} left={c.left} top={c.top} height={lineHeightRef.current}/>
+                    } else{
+                        return <Client key={id} username={c.username} tooltip={false} left={c.left} top={c.top} height={lineHeightRef.current}/>
+                    }
                 })}
             </div>
             <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" />
@@ -205,7 +218,7 @@ const EditorPage = () => {
         </div>
         <div className='editorWrap'>
             {console.log("Here")}
-            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={user_id}/>
+            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}}/>
         </div>
     </div>
   )

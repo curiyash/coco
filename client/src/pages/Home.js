@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import {v4 as uuid} from "uuid";
 import toast from 'react-hot-toast';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { createRoutesFromChildren, Navigate, useNavigate } from 'react-router-dom';
+import { createRoom } from '../firebase';
 
 const Home = () => {
     const [room_id, setRoom_id] = useState("");
+    const [user_id, setUserID] = useState(uuid());
     const [username, setUsername] = useState("");
     const navigate = useNavigate();
 
@@ -13,6 +15,7 @@ const Home = () => {
         const id = uuid();
         setRoom_id(id);
         // console.log(id);
+        createRoom(id);
         toast.success("Created a new room");
     }
 
@@ -26,6 +29,7 @@ const Home = () => {
         navigate(`/editor/${room_id}`, {
             state: {
                 username,
+                user_id,
             }
         })
     }

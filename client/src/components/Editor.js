@@ -18,7 +18,7 @@ import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import {getIt, getRef, doTransaction} from '../firebase';
+import {getIt, getRef, doTransaction, addUser} from '../firebase';
 import { onSnapshot } from 'firebase/firestore';
 import { runTransaction } from 'firebase/firestore';
 
@@ -26,12 +26,10 @@ function FireBase(){
     // getMessages();
 }
 
-const Editor = ({socketRef, room_id, onCodeChange, mode, onModeChange, user_id}) => {
+const Editor = ({socketRef, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
     console.log(mode);
-    const updatedData = useRef(null);
-    const applyChange = useRef(true);
 
     useEffect(() => {
         // FireBase();
@@ -39,13 +37,18 @@ const Editor = ({socketRef, room_id, onCodeChange, mode, onModeChange, user_id})
         // putIt();
         var unsubscribe;
         async function get(){
-            const ref = await getRef("temp", "CusaZ28AkZ6393tusp9f");
+            const ref = await getRef("temp", room_id);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
-                if (c.rooms.test_room.who!==user_id){
-                    onModeChange(c.rooms.test_room.language);
-                    editor.current.setValue(c.rooms.test_room.code);
-                    console.log("Here");
+                if (c.who!==user_id){
+                    onModeChange(c.language);
+                    const prev = editor.current.getScrollInfo();
+                    console.log(prev);
+                    // const prevCursor = editor.current.getCursor();
+                    // console.log(prevCursor);
+                    editor.current.setValue(c.code);
+                    editor.current.scrollTo(prev.left, prev.top);
+                    // editor.current.setCursor({line: prevCursor.line, ch: prevCursor.ch});
                 }
             })
         }
@@ -65,6 +68,12 @@ const Editor = ({socketRef, room_id, onCodeChange, mode, onModeChange, user_id})
                     lineNumbers: true,
                 }
             );
+            onLineHeightChange(editor.current.defaultTextHeight());
+            editor.current.on('cursorActivity', (instance, obj) => {
+                console.log(instance.doc.listSelections())
+                const coords = instance.cursorCoords()
+                addUser(room_id, user_id, username, coords.left, coords.top)
+            })
 
             editor.current.on('change', (instance, changes) => {
                 // origin represents the kind of action
@@ -76,7 +85,7 @@ const Editor = ({socketRef, room_id, onCodeChange, mode, onModeChange, user_id})
                 // Why? Else this causes an infinite loop!
 
                 async function callTransaction(code){
-                    await doTransaction(code, user_id);
+                    await doTransaction(room_id, code, user_id);
                 }
                 if (origin!=='setValue'){
                 //     // Emit this code

@@ -1,0 +1,2 @@
+Try using local storage or session storage for user_id and
+name map
