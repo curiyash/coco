@@ -13,6 +13,12 @@ import FileSaver from 'file-saver';
 import { mimeTypes } from './mimeTypes'
 import { addUser, getRef, leftUser } from '../firebase'
 import { onSnapshot } from 'firebase/firestore';
+import AceEditor from "react-ace";
+import { updateLang, updateNameOfFile } from '../firebase';
+
+import "ace-builds/src-noconflict/mode-javascript";
+import "ace-builds/src-noconflict/theme-dracula";
+import "ace-builds/src-noconflict/ext-language_tools";
 
 const EditorPage = () => {
     // useLocation: Like useState but for current URL
@@ -149,7 +155,9 @@ const EditorPage = () => {
         setMode(option.label);
         const newMode = option.label;
         console.log(option.label);
-        socketRef.current.emit('mode change', {newMode, room_id, codeRef});
+        // Send to Firebase
+        updateLang(room_id, option.label);
+        // socketRef.current.emit('mode change', {newMode, room_id, codeRef});
     }
 
     if (!location.state) {
@@ -183,7 +191,8 @@ const EditorPage = () => {
     function emitFileName(e){
         if (e.key==='Enter' || e.keyCode===13){
             // Emit the event
-            socketRef.current.emit('filename change', {room_id, fileName});
+            // socketRef.current.emit('filename change', {room_id, fileName});
+            updateNameOfFile(room_id, fileName);
         }
     }
 
@@ -218,7 +227,7 @@ const EditorPage = () => {
         </div>
         <div className='editorWrap'>
             {console.log("Here")}
-            <Editor socketRef={socketRef} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}}/>
+            <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}}/>
         </div>
     </div>
   )

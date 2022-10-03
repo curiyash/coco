@@ -26,10 +26,12 @@ const Home = () => {
         }
 
         // Can be done with DB - Redux Store, MongoDB
+        const isNew = true;
         navigate(`/editor/${room_id}`, {
             state: {
                 username,
                 user_id,
+                isNew
             }
         })
     }
