@@ -32,6 +32,7 @@ function FireBase(){
 const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
+    const text = useRef(null);
     const aceEditor = useRef(null);
     const lastUpdated = useRef(null);
     const applyingChanges = useRef(false);
@@ -39,6 +40,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     const isSet = useRef(null);
     const deltas = useRef([]);
     const prevLineNumber = useRef(0);
+    const markerMap = useRef({});
 
     // const style = {
     //     borderLeft: "6px solid green",
@@ -95,10 +97,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                                 delete c.delta.user_id;
                                 editor.current.session.doc.applyDelta(c.delta);
                             }
-                            console.log("Done");
                             // editor.current.getSession().setValue(c.code);
                             // console.log(editor.current.getSession().getValue());
-                            // updateCode(ref, editor.current.getSession().getValue());
+                            updateCode(ref, editor.current.getSession().getValue());
                             lastUpdated.current = c.timestamp;
                         } catch(err){
                             console.log(err);
@@ -204,10 +205,11 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
             // editor.current.container.addEventListener("keydown", keyDownEvent, true)
 
-            var range = new Range(0, 0, 1, 0);
-            console.log(range);
-            var marker = editor.current.session.addMarker(range, 'MyCursorClass');
-            console.log(marker);
+            // Marker
+            // var range = new Range(0, 0, 1, 0);
+            // console.log(range);
+            // var marker = editor.current.session.addMarker(range, 'MyCursorClass');
+            // console.log(marker);
 
 
             // Cursor line
@@ -257,19 +259,28 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         return () => unsubscribe();
     }, []);
 
-    function createMarker(user){
+    async function createMarker(user, id){
         console.log(user);
-        const gutter = document.getElementsByClassName('ace_gutter')[0];
+        const gutter = document.getElementsByClassName('ace_scroller')[0];
         const b = document.createElement('div');
-        b.id = user_id;
+        b.id = id;
         b.classList.add('vl');
         const c  = document.createElement('div');
         c.classList.add('tooltip');
         c.innerText = user.username;
         const pos = editor.current.renderer.textToScreenCoordinates(user.line, 0);
         const y = pos.pageY;
-        b.style.borderLeft = "6px solid green";
-        b.style.height = "10px";
+        if (user_id in markerMap.current){
+            b.style.borderLeft = `4.2px solid #${markerMap.current[user_id]}`;
+            c.style.backgroundColor = `#${markerMap.current[user_id]}`;
+        } else{
+            var randomColor = Math.floor(Math.random()*16777215).toString(16);
+            markerMap.current[user_id] = randomColor;
+            console.log(markerMap.current);
+            b.style.borderLeft = `4.2px solid #${randomColor}`;
+            c.style.backgroundColor = `#${randomColor}`;
+        }
+        b.style.height = `${editor.current.renderer.lineHeight}px`;
         b.style.position = "absolute";
         b.style.top = `${y}px`;
         b.style.zIndex = "10";

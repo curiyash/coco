@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
 import FileSaver from 'file-saver';
-import { mimeTypes } from './mimeTypes'
+import { mimeTypes } from './mimeTypes';
 import { addUser, getRef, leftUser } from '../firebase'
 import { onSnapshot } from 'firebase/firestore';
 import AceEditor from "react-ace";
@@ -125,20 +125,18 @@ const EditorPage = () => {
                 console.log("Setting markers");
                 for (const uid in c){
                     const marker = document.getElementById(uid);
+                    const scroller = document.getElementsByClassName("ace_scroller")[0];
+                    try{
+                        scroller.removeChild(marker);
+                    } catch{
+                        console.log("Not there");
+                    }
+                    console.log(marker);
                     const user = c[uid];
-                    if (marker===null){
-                        console.log("No marker found!");
-                        console.log(uid);
-                        console.log(user);
-                        if (location.state?.user_id!==uid){
-                            createMarker(user);
-                        }
-                    } else{
-                        // update the marker
-                        marker.remove();
-                        if (location.state?.user_id!==uid){
-                            createMarker(user);
-                        }
+                    console.log(uid);
+                    console.log(user);
+                    if (location.state?.user_id!==uid){
+                        await createMarker(user, uid);
                     }
                 }
             }
