@@ -36,6 +36,8 @@ const EditorPage = () => {
     const reactNavigator = useNavigate();
     const left = useRef(263);
     const top = useRef(24);
+    const line = useRef(0);
+    let createMarker = null;
     const lineHeightRef = useRef("24px");
 
     // Initialize socket
@@ -57,7 +59,7 @@ const EditorPage = () => {
 
             // Ask to join in
             // We had passed username in state of location from Home
-            addUser(room_id, location.state?.user_id, location.state?.username, left.current, top.current)
+            addUser(room_id, location.state?.user_id, location.state?.username, line.current)
             socketRef.current.emit('join', {
                 room_id: room_id,
                 username: location.state?.username
@@ -111,6 +113,37 @@ const EditorPage = () => {
             })
         }
 
+        async function setMarkers(c){
+            // const markers = document.getElementsByClassName('vl');
+            // console.log(markers);
+            // if (markers){
+            //     Array.from(markers).forEach((marker) => {
+            //         marker.remove();
+            //     })
+            // }
+            if (createMarker!==null){
+                console.log("Setting markers");
+                for (const uid in c){
+                    const marker = document.getElementById(uid);
+                    const user = c[uid];
+                    if (marker===null){
+                        console.log("No marker found!");
+                        console.log(uid);
+                        console.log(user);
+                        if (location.state?.user_id!==uid){
+                            createMarker(user);
+                        }
+                    } else{
+                        // update the marker
+                        marker.remove();
+                        if (location.state?.user_id!==uid){
+                            createMarker(user);
+                        }
+                    }
+                }
+            }
+        }
+
         let unsubscribe;
         async function getUsers(){
             const ref = await getRef("users", room_id);
@@ -121,6 +154,7 @@ const EditorPage = () => {
             console.log(ref);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
+                setMarkers(c);
                 setClients(c);
             })
         }
@@ -214,7 +248,7 @@ const EditorPage = () => {
                     const c = client[1];
                     console.log(c);
                     if (client[0]!==location.state?.user_id){
-                        return <Client key={id} username={c.username} tooltip={true} left={c.left} top={c.top} height={lineHeightRef.current}/>
+                        return <Client key={id} username={c.username} tooltip={true} line={c.line} top={c.top}/>
                     } else{
                         return <Client key={id} username={c.username} tooltip={false} left={c.left} top={c.top} height={lineHeightRef.current}/>
                     }
@@ -227,7 +261,7 @@ const EditorPage = () => {
         </div>
         <div className='editorWrap'>
             {console.log("Here")}
-            <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}}/>
+            <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}} cM={(crm) => createMarker=crm}/>
         </div>
     </div>
   )

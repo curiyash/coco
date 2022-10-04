@@ -2,3 +2,15 @@
     height: 100vh;
     width: 100vh;
 }
+
+.MyCursorClass {
+    position: absolute;
+    background-color: gold;
+    border-radius: 0px;
+    width: 2px;
+}
+
+.MyCursorClass:hover{
+    position:absolute;
+    background-color: blue;
+}

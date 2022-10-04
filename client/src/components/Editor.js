@@ -19,16 +19,17 @@ import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode} from '../firebase';
+import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine} from '../firebase';
 import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore';
 import { runTransaction } from 'firebase/firestore';
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
+import { Range } from 'ace-builds';
 
 function FireBase(){
     // getMessages();
 }
 
-const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange}) => {
+const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
     const aceEditor = useRef(null);
@@ -37,6 +38,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     const timer = useRef(null);
     const isSet = useRef(null);
     const deltas = useRef([]);
+    const prevLineNumber = useRef(0);
 
     // const style = {
     //     borderLeft: "6px solid green",
@@ -52,10 +54,12 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         lastUpdated.current = Timestamp.fromDate(new Date(2022, 8, 2));
         // putIt();
         var unsubscribe;
+        
         async function get(){
             const ref = await getRef("temp", room_id);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
+                // console.log(c);
                 if (c.who!==user_id && isNew===false){
                     if (c.language!==mode){
                         onModeChange(c.language);
@@ -72,7 +76,8 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     // editor.current.scrollTo(prev.left, prev.top);
                     // editor.current.setCursor({line: prevCursor.line, ch: prevCursor.ch});
                     applyingChanges.current = true;
-                    if (c.delta!==null && lastUpdated.current<c.timestamp){
+                    if (lastUpdated.current<c.timestamp){
+                        // if (c.delta!==null && lastUpdated.current<c.timestamp){
                         try{
                             // c.deltas.forEach((delta) => {
                             //     console.log(lastUpdated.current, delta.time);
@@ -91,9 +96,10 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                                 editor.current.session.doc.applyDelta(c.delta);
                             }
                             console.log("Done");
-                            lastUpdated.current = c.timestamp;
+                            // editor.current.getSession().setValue(c.code);
                             // console.log(editor.current.getSession().getValue());
-                            updateCode(ref, editor.current.getSession().getValue());
+                            // updateCode(ref, editor.current.getSession().getValue());
+                            lastUpdated.current = c.timestamp;
                         } catch(err){
                             console.log(err);
                         }
@@ -111,8 +117,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         }
         get();
         async function init(){
-
             editor.current = ace.edit("editor-ace");
+            // onSetupEditor(editor);
+
             // editor.setTheme("ace/theme/monokai");
             // editor.current.session.setMode("ace/mode/javascript");
             // const prev = document.getElementsByClassName('CodeMirror')[0];
@@ -135,6 +142,16 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             //     const coords = instance.cursorCoords()
             //     addUser(room_id, user_id, username, coords.left, coords.top)
             // })
+
+            editor.current.session.selection.on('changeCursor', (e) => {
+                console.log(e);
+                const lineNumber = editor.current.getCursorPosition().row;
+                // if (prevLineNumber.current!==lineNumber){
+                if (true){
+                    addUser(room_id, user_id, username, lineNumber);
+                    prevLineNumber.current = lineNumber;
+                }
+            })
 
             // editor.current.on('change', (instance, changes) => {
             //     // origin represents the kind of action
@@ -160,9 +177,21 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             //         callTransaction(code);
             //     }
             // })
+
+            async function applyDeltas(){
+                console.log(deltas.current);
+                await editor.current.session.doc.applyDeltas(deltas.current);
+                deltas.current = [];
+            }
+
             async function callTransForAce(delta){
                 await doTransactionForAce(room_id, delta, user_id);
-                isSet.current = null;
+                // await updateLine(room_id, user_id, editor.getCursorPosition().row);
+                // isSet.current = null;
+                // await applyDeltas();
+                // const text = await editor.current.getSession().getValue();
+                // await doTransactionForAce(room_id, text, user_id);
+                // isSet.current = null;
             }
 
             // function keyDownEvent(e){
@@ -175,6 +204,20 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
             // editor.current.container.addEventListener("keydown", keyDownEvent, true)
 
+            var range = new Range(0, 0, 1, 0);
+            console.log(range);
+            var marker = editor.current.session.addMarker(range, 'MyCursorClass');
+            console.log(marker);
+
+
+            // Cursor line
+            console.log(editor.current.getCursorPosition());
+            // console.log(editor.current.getCursorPosition());
+            // const cursor = editor.current.getCursorPosition();
+            // const coords = editor.current.renderer.textToScreenCoordinates(cursor.row-270, cursor.column);
+            // console.log(coords);
+            // editor.current.renderer.setHighlightGutterLine(true)
+
             editor.current.on('change', (e) => {
                 const time = Timestamp.fromDate(new Date());
                 e.time = time;
@@ -186,18 +229,24 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 // console.log(isSet, applyingChanges.current);
                 if (applyingChanges.current===false){
                     // deltas.current.push(e);
-                    if (isSet.current===null){
-                        // isSet.current = true;
-                        // console.log("timeout set");
-                        // timer.current = setTimeout(() => {
-                        //     console.log("I timed out");
-                        //     callTransForAce(deltas);
-                        // }, 1000);
-                        callTransForAce(e);
-                    }
-                } else if (editor.current.curOp.args!==undefined){
-                    // deltas.current.push(e);
+                    // if (isSet.current===null){
+                    //     // isSet.current = true;
+                    //     // console.log("timeout set");
+                    //     // timer.current = setTimeout(() => {
+                    //     //     console.log("I timed out");
+                    //     //     callTransForAce(deltas);
+                    //     // }, 1000);
+                    //     callTransForAce(e);
+                    // }
+
+                    // Apply the previous deltas, until then don't accept any strings
+                    // Send the entire code to firebase
+                    // const ref = await getRef("temp", room_id);
+                    // updateCode(ref, editor.current.getSession().getValue());
                     callTransForAce(e);
+                } else if (editor.current.curOp.args!==undefined){
+                    deltas.current.push(e);
+                    // callTransForAce(e);
                     console.log("This should be it");
                 }
             })
@@ -207,6 +256,28 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         console.log(editor.current);
         return () => unsubscribe();
     }, []);
+
+    function createMarker(user){
+        console.log(user);
+        const gutter = document.getElementsByClassName('ace_gutter')[0];
+        const b = document.createElement('div');
+        b.id = user_id;
+        b.classList.add('vl');
+        const c  = document.createElement('div');
+        c.classList.add('tooltip');
+        c.innerText = user.username;
+        const pos = editor.current.renderer.textToScreenCoordinates(user.line, 0);
+        const y = pos.pageY;
+        b.style.borderLeft = "6px solid green";
+        b.style.height = "10px";
+        b.style.position = "absolute";
+        b.style.top = `${y}px`;
+        b.style.zIndex = "10";
+        b.appendChild(c);
+        gutter.appendChild(b);
+    }
+
+    cM(createMarker);
 
     // // useEffect for listening to a code change
     // useEffect(() => {
