@@ -24,12 +24,14 @@ import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy } from 
 import { runTransaction } from 'firebase/firestore';
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
 import { Range } from 'ace-builds';
+import Button from '@mui/material/Button';
+import ScrollableTabsButtonAuto from './Tabs';
 
 function FireBase(){
     // getMessages();
 }
 
-const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM}) => {
+const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM, onSessionChange}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
     const text = useRef(null);
@@ -41,6 +43,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     const deltas = useRef([]);
     const prevLineNumber = useRef(0);
     const markerMap = useRef({});
+    const [sessions, setSessions] = useState({'key':-1});
+    const sessionID = useRef(0);
+    // const [sessionID, setSessionID] = useState(0);
 
     // const style = {
     //     borderLeft: "6px solid green",
@@ -58,9 +63,10 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         var unsubscribe;
         
         async function get(){
-            const ref = await getRef("temp", room_id);
+            // const ref = await getRef("temp", room_id);
+            const ref = await getRef("newTemp", room_id);
             unsubscribe = onSnapshot(ref, (doc) => {
-                const c = doc.data();
+                const c = doc.data()[0];
                 // console.log(c);
                 if (c.who!==user_id && isNew===false){
                     if (c.language!==mode){
@@ -95,7 +101,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                             if (lastUpdated.current<c.delta.time<c.delta.user_id!==user_id){
                                 delete c.delta.time;
                                 delete c.delta.user_id;
+                                var rev = editor.current.session.$undoManager.startNewGroup();
                                 editor.current.session.doc.applyDelta(c.delta);
+                                editor.current.session.$undoManager.markIgnored(rev);
                             }
                             // editor.current.getSession().setValue(c.code);
                             // console.log(editor.current.getSession().getValue());
@@ -119,6 +127,16 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         get();
         async function init(){
             editor.current = ace.edit("editor-ace");
+            const mainSession = ace.createEditSession("");
+            editor.current.setSession(mainSession);
+            setSessions((prev) => {
+                const key = prev.key+1;
+                return {
+                    ...prev,
+                    [key]: mainSession,
+                    key: key,
+                };
+            })
             // onSetupEditor(editor);
 
             // editor.setTheme("ace/theme/monokai");
@@ -186,7 +204,10 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             }
 
             async function callTransForAce(delta){
-                await doTransactionForAce(room_id, delta, user_id);
+                // single
+                // await doTransactionForAce(room_id, delta, user_id);
+                // multi
+                await doTransactionForAce(room_id, delta, user_id, sessionID.current);
                 // await updateLine(room_id, user_id, editor.getCursorPosition().row);
                 // isSet.current = null;
                 // await applyDeltas();
@@ -255,10 +276,10 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         }
 
         init();
-        console.log(editor.current);
         return () => unsubscribe();
     }, []);
 
+    console.log(sessions);
     async function createMarker(user, id){
         console.log(user);
         const gutter = document.getElementsByClassName('ace_scroller')[0];
@@ -269,7 +290,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         c.classList.add('tooltip');
         c.innerText = user.username;
         const pos = editor.current.renderer.textToScreenCoordinates(user.line, 0);
-        const y = pos.pageY;
+        const y = pos.pageY-84.5;
         if (user_id in markerMap.current){
             b.style.borderLeft = `4.2px solid #${markerMap.current[user_id]}`;
             c.style.backgroundColor = `#${markerMap.current[user_id]}`;
@@ -309,11 +330,29 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     //     }
     // }, [socketRef.current])
 
+    function addNewSession(){
+        const newSession = ace.createEditSession("");
+        editor.current.setSession(newSession);
+        setSessions((prev) => {
+            const key = prev.key+1;
+            return {
+                ...prev,
+                [key]: newSession,
+                key: key,
+            };
+        })
+        // Send to Firebase
+    }
+
   return (
-    <div id="editor-ace">
-        {/* <textarea id="realtime-editor">
-        </textarea> */}
-        {/* {update()} */}
+    <div>
+        <ScrollableTabsButtonAuto className="tabs" sessions={sessions} editor={editor}/>
+        <Button variant="contained" onClick={addNewSession}>+</Button>
+        <div id="editor-ace">
+            {/* <textarea id="realtime-editor">
+            </textarea> */}
+            {/* {update()} */}
+        </div>
     </div>
   )
 }

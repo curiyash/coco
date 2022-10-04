@@ -37,6 +37,7 @@ const EditorPage = () => {
     const left = useRef(263);
     const top = useRef(24);
     const line = useRef(0);
+    const session = useRef(0);
     let createMarker = null;
     const lineHeightRef = useRef("24px");
 
@@ -188,7 +189,7 @@ const EditorPage = () => {
         const newMode = option.label;
         console.log(option.label);
         // Send to Firebase
-        updateLang(room_id, option.label);
+        updateLang(room_id, option.label, session.current);
         // socketRef.current.emit('mode change', {newMode, room_id, codeRef});
     }
 
@@ -224,7 +225,7 @@ const EditorPage = () => {
         if (e.key==='Enter' || e.keyCode===13){
             // Emit the event
             // socketRef.current.emit('filename change', {room_id, fileName});
-            updateNameOfFile(room_id, fileName);
+            updateNameOfFile(room_id, fileName, session.current);
         }
     }
 
@@ -259,7 +260,7 @@ const EditorPage = () => {
         </div>
         <div className='editorWrap'>
             {console.log("Here")}
-            <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}} cM={(crm) => createMarker=crm}/>
+            <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}} cM={(crm) => createMarker=crm} onSessionChange={(sessionID) => {session.current=sessionID}}/>
         </div>
     </div>
   )
