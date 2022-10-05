@@ -152,7 +152,7 @@ const EditorPage = () => {
             console.log(ref);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
-                // setMarkers(c);
+                setMarkers(c);
                 setClients(c);
             })
         }
