@@ -108,9 +108,8 @@ const EditorPage = () => {
             })
 
             window.addEventListener('beforeunload', async function(e){
-                console.log("Refreshed");
-                await leftUser(room_id, location.state?.user_id);
                 e.preventDefault();
+                await leftUser(room_id, location.state?.user_id);
             })
         }
 
@@ -153,7 +152,7 @@ const EditorPage = () => {
             console.log(ref);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
-                setMarkers(c);
+                // setMarkers(c);
                 setClients(c);
             })
         }
@@ -165,6 +164,9 @@ const EditorPage = () => {
             socketRef.current.disconnect();
             socketRef.current.off('joined');
             socketRef.current.off('disconnected');
+            window.removeEventListener('beforeunload', () => {
+                console.log("Successfully exited");
+            })
             unsubscribe();
         }
     }, []);

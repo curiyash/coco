@@ -1,0 +1,2 @@
+Contention on how to update markers
+In Editor or in EditorPage or both

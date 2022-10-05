@@ -1,0 +1,10 @@
+1) Undo and Redo and Key bindings
+2) Shared cursors
+3) Multi tab
+4) CSS
+5) Sync code
+6) Local session vs shared session
+
+There is go to line end too
+stopPropagation for blocking an active line: https://gist.github.com/ericallam/1348983/39ea8449bd61c0f864842c9a120bc188b3ba04b7
+New feature: Define active areas

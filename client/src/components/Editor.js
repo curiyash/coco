@@ -19,7 +19,7 @@ import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine} from '../firebase';
+import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions} from '../firebase';
 import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore';
 import { runTransaction } from 'firebase/firestore';
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
@@ -68,14 +68,14 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data()[0];
                 // console.log(c);
+                if (c.language!==mode){
+                    onModeChange(c.language);
+                    editor.current.session.setMode(`ace/mode/${c.language}`);
+                }
+                if (c.filename!==fileName){
+                    onFileNameChange(c.filename);
+                }
                 if (c.who!==user_id && isNew===false){
-                    if (c.language!==mode){
-                        onModeChange(c.language);
-                        editor.current.session.setMode(`ace/mode/${c.language}`);
-                    }
-                    if (c.filename!==fileName){
-                        onFileNameChange(c.filename);
-                    }
                     // const prev = editor.current.getScrollInfo();
                     // console.log(prev);
                     // const prevCursor = editor.current.getCursor();
@@ -85,6 +85,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     // editor.current.setCursor({line: prevCursor.line, ch: prevCursor.ch});
                     applyingChanges.current = true;
                     if (lastUpdated.current<c.timestamp){
+                    // if (true){
                         // if (c.delta!==null && lastUpdated.current<c.timestamp){
                         try{
                             // c.deltas.forEach((delta) => {
@@ -98,6 +99,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                             //         editor.current.session.doc.applyDelta(delta);
                             //     }
                             // })
+                            // if (lastUpdated.current<c.delta.time<c.delta.user_id!==user_id){
                             if (lastUpdated.current<c.delta.time<c.delta.user_id!==user_id){
                                 delete c.delta.time;
                                 delete c.delta.user_id;
@@ -107,7 +109,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                             }
                             // editor.current.getSession().setValue(c.code);
                             // console.log(editor.current.getSession().getValue());
-                            updateCode(ref, editor.current.getSession().getValue());
+                            // updateCode(room_id, 0, editor.current.getSession().getValue());
                             lastUpdated.current = c.timestamp;
                         } catch(err){
                             console.log(err);
@@ -137,6 +139,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     key: key,
                 };
             })
+            // await initSession(room_id, mainSession);
             // onSetupEditor(editor);
 
             // editor.setTheme("ace/theme/monokai");
@@ -208,6 +211,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 // await doTransactionForAce(room_id, delta, user_id);
                 // multi
                 await doTransactionForAce(room_id, delta, user_id, sessionID.current);
+                updateCode(room_id, 0, editor.current.getSession().getValue());
                 // await updateLine(room_id, user_id, editor.getCursorPosition().row);
                 // isSet.current = null;
                 // await applyDeltas();
@@ -290,17 +294,24 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         c.classList.add('tooltip');
         c.innerText = user.username;
         const pos = editor.current.renderer.textToScreenCoordinates(user.line, 0);
+        console.log(pos.pageY);
         const y = pos.pageY-84.5;
         if (user_id in markerMap.current){
+            console.log(markerMap);
+            console.log(user_id);
+            console.log(markerMap.current[user_id]);
             b.style.borderLeft = `4.2px solid #${markerMap.current[user_id]}`;
             c.style.backgroundColor = `#${markerMap.current[user_id]}`;
+            console.log("Already present");
         } else{
             var randomColor = Math.floor(Math.random()*16777215).toString(16);
             markerMap.current[user_id] = randomColor;
             console.log(markerMap.current);
             b.style.borderLeft = `4.2px solid #${randomColor}`;
             c.style.backgroundColor = `#${randomColor}`;
+            console.log("Adding to markers");
         }
+        window.markerMap = markerMap;
         b.style.height = `${editor.current.renderer.lineHeight}px`;
         b.style.position = "absolute";
         b.style.top = `${y}px`;
@@ -342,6 +353,21 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             };
         })
         // Send to Firebase
+    }
+
+    async function addNewSession(){
+        const newSession = ace.createEditSession("");
+        editor.current.setSession(newSession);
+        setSessions((prev) => {
+            const key = prev.key+1;
+            return {
+                ...prev,
+                [key]: newSession,
+                key: key,
+            };
+        })
+        // Send to Firebase
+        await updateSessions(room_id, sessionID, newSession);
     }
 
   return (
