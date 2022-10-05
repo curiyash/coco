@@ -43,10 +43,8 @@ const EditorPage = () => {
     let createMarker = null;
     const lineHeightRef = useRef("24px");
 
-    // Initialize socket
     // useRef: does not rerender component when state changes
     // available on rerender
-    // const socketRef = useRef(null);
     useEffect(() => {
         const init = async() => {
             // Ask to join in
@@ -202,8 +200,6 @@ const EditorPage = () => {
             <h3>Connected</h3>
             <div className='clientsList'>
                 {clients.map((client, id) => {
-                    // console.log(client[0]);
-                    // console.log(c);
                     return <Client key={id} username={client.username}/>
                 })}
             </div>

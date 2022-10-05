@@ -215,25 +215,6 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
     cM(createMarker);
 
-    // // useEffect for listening to a code change
-    // useEffect(() => {
-    //     if (socketRef.current!==null){
-    //         socketRef.current.on('code change', ({code}) => {
-    //             if (code!==null){
-    //                 // Why the condition?
-    //                 // If code was null by any chance, then
-    //                 // entire user code would be overwritten
-    //                 // set the code in current editor
-    //                 editor.current.setValue(code);
-    //             }
-    //         })
-    //     }
-
-    //     return () => {
-    //         socketRef.current.off('code change');
-    //     }
-    // }, [socketRef.current])
-
     function addNewSession(){
         const newSession = ace.createEditSession("");
         editor.current.setSession(newSession);
