@@ -99,11 +99,28 @@ const EditorPage = () => {
             // console.log(ref);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
-                setMarkers(c);
-                setClients(c);
+                    // c.sort((a, b) => {
+                    //     const u1 = a.username.toLowerCase();
+                    //     const u2 = b.username.toLowerCase();
+                    //     if (u1<u2){
+                    //         return 1;
+                    //     } else if (u1>=u2){
+                    //         return -1;
+                    //     }
+                    // })
+                const users = Object.values(c);
+                users.sort((a, b) => {
+                    const u1 = a.username.toLowerCase();
+                    const u2 = b.username.toLowerCase();
+                    if (u1<u2){
+                        return -1;
+                    } else if (u1>=u2){
+                        return 1;
+                    } 
+                })
+                setClients(users);
             })
         }
-
         init();
         getUsers();
         // Always clear the listeners, else it causes memory leak
@@ -184,15 +201,10 @@ const EditorPage = () => {
             </div>
             <h3>Connected</h3>
             <div className='clientsList'>
-                {Object.entries(clients).map((client, id) => {
+                {clients.map((client, id) => {
                     // console.log(client[0]);
-                    const c = client[1];
                     // console.log(c);
-                    if (client[0]!==location.state?.user_id){
-                        return <Client key={id} username={c.username} tooltip={true} line={c.line} top={c.top}/>
-                    } else{
-                        return <Client key={id} username={c.username} tooltip={false} left={c.left} top={c.top} height={lineHeightRef.current}/>
-                    }
+                    return <Client key={id} username={client.username}/>
                 })}
             </div>
             <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" />
