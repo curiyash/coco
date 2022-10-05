@@ -1,6 +1,5 @@
 #editor-ace{
     height: 100vh;
-    width: 100vh;
 }
 
 .MyCursorClass {
@@ -13,4 +12,8 @@
 .MyCursorClass:hover{
     position:absolute;
     background-color: blue;
+}
+
+.dropdown {
+    width: 184px;
 }

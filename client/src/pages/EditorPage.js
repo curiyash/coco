@@ -16,6 +16,8 @@ import { onSnapshot } from 'firebase/firestore';
 import AceEditor from "react-ace";
 import { updateLang, updateNameOfFile } from '../firebase';
 
+import ace from "../../node_modules/ace-builds/src-noconflict/ace";
+
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/theme-dracula";
 import "ace-builds/src-noconflict/ext-language_tools";
@@ -44,68 +46,13 @@ const EditorPage = () => {
     // Initialize socket
     // useRef: does not rerender component when state changes
     // available on rerender
-    const socketRef = useRef(null);
+    // const socketRef = useRef(null);
     useEffect(() => {
         const init = async() => {
-            console.log("Trying to connect");
-            socketRef.current = await initSocket();
-            socketRef.current.on('connect_error', (err) => handleError(err));
-            socketRef.current.on('connect_failed', (err) => handleError(err));
-
-            function handleError(err){
-                console.log(`Socket error: ${err}`);
-                toast.error('Socket connection failed, try again later');
-                reactNavigator("/");
-            }
-
             // Ask to join in
             // We had passed username in state of location from Home
             addUser(room_id, location.state?.user_id, location.state?.username, line.current)
-            socketRef.current.emit('join', {
-                room_id: room_id,
-                username: location.state?.username
-            });
-            toast.success("Aftermath");
-
-            // Toast after a user joins in
-            // POTENTIAL ISSUE
-            // getUsers();
-            // socketRef.current.on('joined', ({clients, username, socket_id}) => {
-            //     if (username!==location.state.username){
-            //         toast.success(`${username} has joined the room`);
-            //     }
-            //     setClients(clients);
-            //     socketRef.current.emit('sync code', {
-            //         socket_id: socket_id,
-            //         code: codeRef.current
-            //     });
-            // });
-
-            // For disconnecting
-            // socketRef.current.on('disconnected', ({socket_id, username}) => {
-            //     toast.success(`${username} has left the room`);
-            //     setClients((prev) => {
-            //         return prev.filter(
-            //             (client) => client.socket_id!==socket_id
-            //         )
-            //     })
-            // })
-
-            // On mode change
-            socketRef.current.on('mode change', ({newMode, code}) => {
-                toast.success(`Switched to ${newMode}`);
-                setMode(newMode);
-                socketRef.current.emit('sync code after mode change', {
-                    room_id,
-                    code
-                });
-            })
-
-            // On filename change
-            socketRef.current.on('filename change', ({fileName}) => {
-                toast.success(`Filename changed to ${fileName}`);
-                setFileName(fileName);
-            })
+            toast.success("Joined the room successfully!");
 
             window.addEventListener('beforeunload', async function(e){
                 e.preventDefault();
@@ -161,9 +108,6 @@ const EditorPage = () => {
         getUsers();
         // Always clear the listeners, else it causes memory leak
         return () => {
-            socketRef.current.disconnect();
-            socketRef.current.off('joined');
-            socketRef.current.off('disconnected');
             window.removeEventListener('beforeunload', () => {
                 console.log("Successfully exited");
             })
@@ -188,11 +132,8 @@ const EditorPage = () => {
 
     function _onSelect (option) {
         setMode(option.label);
-        const newMode = option.label;
-        // console.log(option.label);
         // Send to Firebase
         updateLang(room_id, option.label, session.current);
-        // socketRef.current.emit('mode change', {newMode, room_id, codeRef});
     }
 
     if (!location.state) {
@@ -226,7 +167,6 @@ const EditorPage = () => {
     function emitFileName(e){
         if (e.key==='Enter' || e.keyCode===13){
             // Emit the event
-            // socketRef.current.emit('filename change', {room_id, fileName});
             updateNameOfFile(room_id, fileName, session.current);
         }
     }
