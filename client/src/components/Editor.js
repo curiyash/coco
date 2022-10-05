@@ -19,13 +19,15 @@ import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions} from '../firebase';
-import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore';
+import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions, setDelta, getQuery} from '../firebase';
+import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy, getDoc } from 'firebase/firestore';
 import { runTransaction } from 'firebase/firestore';
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
 import { Range } from 'ace-builds';
 import Button from '@mui/material/Button';
 import ScrollableTabsButtonAuto from './Tabs';
+import { onLog } from 'firebase/app';
+import { query, where } from "firebase/firestore";
 
 function FireBase(){
     // getMessages();
@@ -64,65 +66,60 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         
         async function get(){
             // const ref = await getRef("temp", room_id);
-            const ref = await getRef("newTemp", room_id);
+            // const ref = await getRef("newTemp", room_id);
+            const roomCode = (await getDoc(await(getRef("users", room_id)))).data();
+            const ref = await getRef("users", room_id);
             unsubscribe = onSnapshot(ref, (doc) => {
-                const c = doc.data()[0];
-                // console.log(c);
-                if (c.language!==mode){
-                    onModeChange(c.language);
-                    editor.current.session.setMode(`ace/mode/${c.language}`);
-                }
-                if (c.filename!==fileName){
-                    onFileNameChange(c.filename);
-                }
-                if (c.who!==user_id && isNew===false){
-                    // const prev = editor.current.getScrollInfo();
-                    // console.log(prev);
-                    // const prevCursor = editor.current.getCursor();
-                    // console.log(prevCursor);
-                    // editor.current.setValue(c.code);
-                    // editor.current.scrollTo(prev.left, prev.top);
-                    // editor.current.setCursor({line: prevCursor.line, ch: prevCursor.ch});
-                    applyingChanges.current = true;
-                    if (lastUpdated.current<c.timestamp){
-                    // if (true){
-                        // if (c.delta!==null && lastUpdated.current<c.timestamp){
-                        try{
-                            // c.deltas.forEach((delta) => {
-                            //     console.log(lastUpdated.current, delta.time);
-                            //     console.log(lastUpdated.current<delta.time);
-                            //     if (lastUpdated.current<delta.time<delta.user_id!==user_id){
-                            //         console.log(delta);
-                            //         console.log(lastUpdated.current);
-                            //         delete delta.time;
-                            //         delete delta.user_id;
-                            //         editor.current.session.doc.applyDelta(delta);
-                            //     }
-                            // })
-                            // if (lastUpdated.current<c.delta.time<c.delta.user_id!==user_id){
-                            if (lastUpdated.current<c.delta.time<c.delta.user_id!==user_id){
-                                delete c.delta.time;
-                                delete c.delta.user_id;
-                                var rev = editor.current.session.$undoManager.startNewGroup();
-                                editor.current.session.doc.applyDelta(c.delta);
-                                editor.current.session.$undoManager.markIgnored(rev);
-                            }
-                            // editor.current.getSession().setValue(c.code);
-                            // console.log(editor.current.getSession().getValue());
-                            // updateCode(room_id, 0, editor.current.getSession().getValue());
-                            lastUpdated.current = c.timestamp;
-                        } catch(err){
-                            console.log(err);
-                        }
+                // 2.0: const c = doc.data()[0];
+                // 3.0
+                const c = doc.data();
+                let maxTime = lastUpdated.current;
+                // Get all user deltas and update them
+                applyingChanges.current = true;
+                Object.keys(c).forEach((uid, index) => {
+                    const user_info = c[uid];
+                    console.log(user_info);
+                    const time = user_info.timeStamp;
+                    if (!time){
+                        return
                     }
-                } else if (c.who!==user_id && isNew==true){
-                    onModeChange(c.language);
-                    editor.current.session.setMode(`ace/mode/${c.language}`);
-                    applyingChanges.current = true;
-                    editor.current.session.setValue(c.code);
-                    applyingChanges.current = false;
-                    isNew = false;
-                }
+                    if (time>maxTime){
+                        maxTime = time;
+                    }
+                    console.log(lastUpdated.current<time);
+                    if (uid!==user_id && isNew===false && lastUpdated.current<time){
+                        if (true){
+                            try{
+                                user_info.delta.sort((a, b) => {
+                                    if (a.time<b.time){
+                                        return -1;
+                                    } else if (a.time>b.time){
+                                        return 1;
+                                    } else{
+                                        return 0;
+                                    }
+                                })
+                                user_info.delta.forEach((d) => {
+                                    if (lastUpdated.current<d.time){
+                                        const tee = d.time;
+                                        delete d.time;
+                                        var rev = editor.current.session.$undoManager.startNewGroup();
+                                        editor.current.session.doc.applyDelta(d);
+                                        editor.current.session.$undoManager.markIgnored(rev);
+                                        console.log(d.lines);
+                                        lastUpdated.current = tee;
+                                    }
+                                })
+                            } catch(err){
+                                console.log(err);
+                            }
+                        }
+                    } else if (uid!==user_id && isNew==true){
+                        editor.current.session.setValue(roomCode.code);
+                        lastUpdated.current = Timestamp.fromDate(new Date());
+                        isNew = false;
+                    }
+                })
                 applyingChanges.current = false;
             })
         }
@@ -139,66 +136,6 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     key: key,
                 };
             })
-            // await initSession(room_id, mainSession);
-            // onSetupEditor(editor);
-
-            // editor.setTheme("ace/theme/monokai");
-            // editor.current.session.setMode("ace/mode/javascript");
-            // const prev = document.getElementsByClassName('CodeMirror')[0];
-            // if (prev!==undefined){
-            //     prev.remove();
-            // }
-            // editor.current = Codemirror.fromTextArea(
-            //     document.getElementById('realtime-editor'),
-            //     {
-            //         mode: { name: mode, json: true },
-            //         theme: 'dracula',
-            //         autoCloseTags: true,
-            //         autoCloseBrackets: true,
-            //         lineNumbers: true,
-            //     }
-            // );
-            // onLineHeightChange(editor.current.defaultTextHeight());
-            // editor.current.on('cursorActivity', (instance, obj) => {
-            //     console.log(instance.doc.listSelections())
-            //     const coords = instance.cursorCoords()
-            //     addUser(room_id, user_id, username, coords.left, coords.top)
-            // })
-
-            editor.current.session.selection.on('changeCursor', (e) => {
-                console.log(e);
-                const lineNumber = editor.current.getCursorPosition().row;
-                // if (prevLineNumber.current!==lineNumber){
-                if (true){
-                    addUser(room_id, user_id, username, lineNumber);
-                    prevLineNumber.current = lineNumber;
-                }
-            })
-
-            // editor.current.on('change', (instance, changes) => {
-            //     // origin represents the kind of action
-            //     const { origin } = changes;
-            //     console.log(changes);
-            //     const line = changes.from.line;
-            //     const text = instance.getLine(line);
-            //     // get the current code in editor
-            //     const code = instance.getValue();
-            //     onCodeChange(code);
-            //     // If origin isn't setValue, then and then only
-            //     // Why? Else this causes an infinite loop!
-
-            //     async function callTransaction(code){
-            //         await doTransaction(room_id, code, user_id, line, text);
-            //     }
-            //     if (origin!=='setValue'){
-            //     //     // Emit this code
-            //     //     socketRef.current.emit('code change', {
-            //     //         room_id: room_id,
-            //     //         code: code,
-            //     //     })
-            //         callTransaction(code);
-            //     }
-            // })
 
             async function applyDeltas(){
                 console.log(deltas.current);
@@ -210,71 +147,20 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 // single
                 // await doTransactionForAce(room_id, delta, user_id);
                 // multi
+                if (delta===null){
+                    alert("Delta is null");
+                }
                 await doTransactionForAce(room_id, delta, user_id, sessionID.current);
+                // await setDelta(room_id, delta, user_id);
                 updateCode(room_id, 0, editor.current.getSession().getValue());
-                // await updateLine(room_id, user_id, editor.getCursorPosition().row);
-                // isSet.current = null;
-                // await applyDeltas();
-                // const text = await editor.current.getSession().getValue();
-                // await doTransactionForAce(room_id, text, user_id);
-                // isSet.current = null;
             }
 
-            // function keyDownEvent(e){
-            //     console.log(e);
-            //     if (e.ctrlKey) {//Alt+c, Alt+v will also be disabled sadly.
-            //         console.log("Control was pressed");
-            //     }
-            //     console.log("Keydown");
-            // }
-
-            // editor.current.container.addEventListener("keydown", keyDownEvent, true)
-
-            // Marker
-            // var range = new Range(0, 0, 1, 0);
-            // console.log(range);
-            // var marker = editor.current.session.addMarker(range, 'MyCursorClass');
-            // console.log(marker);
-
-
-            // Cursor line
-            console.log(editor.current.getCursorPosition());
-            // console.log(editor.current.getCursorPosition());
-            // const cursor = editor.current.getCursorPosition();
-            // const coords = editor.current.renderer.textToScreenCoordinates(cursor.row-270, cursor.column);
-            // console.log(coords);
-            // editor.current.renderer.setHighlightGutterLine(true)
-
             editor.current.on('change', (e) => {
-                const time = Timestamp.fromDate(new Date());
-                e.time = time;
-                e.user_id = user_id;
                 onCodeChange(editor.current.getSession().getValue());
-                // console.log(editor.current.curOp.command.name!==undefined);
-                // console.log(editor.current.curOp.args);
-                // console.log(editor.current.curOp.args===undefined);
-                // console.log(isSet, applyingChanges.current);
                 if (applyingChanges.current===false){
-                    // deltas.current.push(e);
-                    // if (isSet.current===null){
-                    //     // isSet.current = true;
-                    //     // console.log("timeout set");
-                    //     // timer.current = setTimeout(() => {
-                    //     //     console.log("I timed out");
-                    //     //     callTransForAce(deltas);
-                    //     // }, 1000);
-                    //     callTransForAce(e);
-                    // }
-
-                    // Apply the previous deltas, until then don't accept any strings
-                    // Send the entire code to firebase
-                    // const ref = await getRef("temp", room_id);
-                    // updateCode(ref, editor.current.getSession().getValue());
+                    const time = Timestamp.fromDate(new Date());
+                    e.time = time;
                     callTransForAce(e);
-                } else if (editor.current.curOp.args!==undefined){
-                    deltas.current.push(e);
-                    // callTransForAce(e);
-                    console.log("This should be it");
                 }
             })
         }
@@ -283,9 +169,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         return () => unsubscribe();
     }, []);
 
-    console.log(sessions);
+    // console.log(sessions);
     async function createMarker(user, id){
-        console.log(user);
+        // console.log(user);
         const gutter = document.getElementsByClassName('ace_scroller')[0];
         const b = document.createElement('div');
         b.id = id;
@@ -294,22 +180,22 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         c.classList.add('tooltip');
         c.innerText = user.username;
         const pos = editor.current.renderer.textToScreenCoordinates(user.line, 0);
-        console.log(pos.pageY);
+        // console.log(pos.pageY);
         const y = pos.pageY-84.5;
         if (user_id in markerMap.current){
-            console.log(markerMap);
-            console.log(user_id);
-            console.log(markerMap.current[user_id]);
+            // console.log(markerMap);
+            // console.log(user_id);
+            // console.log(markerMap.current[user_id]);
             b.style.borderLeft = `4.2px solid #${markerMap.current[user_id]}`;
             c.style.backgroundColor = `#${markerMap.current[user_id]}`;
-            console.log("Already present");
+            // console.log("Already present");
         } else{
             var randomColor = Math.floor(Math.random()*16777215).toString(16);
             markerMap.current[user_id] = randomColor;
-            console.log(markerMap.current);
+            // console.log(markerMap.current);
             b.style.borderLeft = `4.2px solid #${randomColor}`;
             c.style.backgroundColor = `#${randomColor}`;
-            console.log("Adding to markers");
+            // console.log("Adding to markers");
         }
         window.markerMap = markerMap;
         b.style.height = `${editor.current.renderer.lineHeight}px`;

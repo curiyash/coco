@@ -122,19 +122,19 @@ const EditorPage = () => {
             //     })
             // }
             if (createMarker!==null){
-                console.log("Setting markers");
+                // console.log("Setting markers");
                 for (const uid in c){
                     const marker = document.getElementById(uid);
                     const scroller = document.getElementsByClassName("ace_scroller")[0];
                     try{
                         scroller.removeChild(marker);
                     } catch{
-                        console.log("Not there");
+                        // console.log("Not there");
                     }
-                    console.log(marker);
+                    // console.log(marker);
                     const user = c[uid];
-                    console.log(uid);
-                    console.log(user);
+                    // console.log(uid);
+                    // console.log(user);
                     if (location.state?.user_id!==uid){
                         await createMarker(user, uid);
                     }
@@ -148,8 +148,8 @@ const EditorPage = () => {
             // if (username!==location.state.username){
             //     toast.success(`${username} has joined the room`);
             // }
-            console.log("Ref");
-            console.log(ref);
+            // console.log("Ref");
+            // console.log(ref);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
                 setMarkers(c);
@@ -189,7 +189,7 @@ const EditorPage = () => {
     function _onSelect (option) {
         setMode(option.label);
         const newMode = option.label;
-        console.log(option.label);
+        // console.log(option.label);
         // Send to Firebase
         updateLang(room_id, option.label, session.current);
         // socketRef.current.emit('mode change', {newMode, room_id, codeRef});
@@ -201,7 +201,7 @@ const EditorPage = () => {
 
     function downloadCode(e){
         e.preventDefault();
-        console.log(fileName);
+        // console.log(fileName);
         const code = codeRef.current;
         if (code===null || code===""){
             toast.error("There is no code!");
@@ -213,7 +213,7 @@ const EditorPage = () => {
         if (mime!==undefined){
             blob = new Blob([code], {type: `application/octet-stream;charset=utf-8`});
         } else{
-            console.log(`Downloading as ${mimeTypes[mode]}`);
+            // console.log(`Downloading as ${mimeTypes[mode]}`);
             blob = new Blob([code], {type: `${mimeTypes[mode]};charset=utf-8`});
         }
         FileSaver.saveAs(blob, fileName);
@@ -245,9 +245,9 @@ const EditorPage = () => {
             <h3>Connected</h3>
             <div className='clientsList'>
                 {Object.entries(clients).map((client, id) => {
-                    console.log(client[0]);
+                    // console.log(client[0]);
                     const c = client[1];
-                    console.log(c);
+                    // console.log(c);
                     if (client[0]!==location.state?.user_id){
                         return <Client key={id} username={c.username} tooltip={true} line={c.line} top={c.top}/>
                     } else{
@@ -261,7 +261,7 @@ const EditorPage = () => {
             <button className="btn" onClick={downloadCode}>Download</button>
         </div>
         <div className='editorWrap'>
-            {console.log("Here")}
+            {/* {console.log("Here")} */}
             <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}} cM={(crm) => createMarker=crm} onSessionChange={(sessionID) => {session.current=sessionID}}/>
         </div>
     </div>
