@@ -28,10 +28,6 @@ import ScrollableTabsButtonAuto from './Tabs';
 import { onLog } from 'firebase/app';
 import { query, where } from "firebase/firestore";
 
-function FireBase(){
-    // getMessages();
-}
-
 const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM, onSessionChange}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
@@ -40,7 +36,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     const aceEditor = useRef(null);
     const lastUpdated = useRef(Timestamp.fromDate(new Date(2022, 8, 2)));
     const applyingChanges = useRef(false);
-    const timer = useRef(null);
+    const timer = useRef(false);
     const isSet = useRef(null);
     const deltas = useRef([]);
     const prevLineNumber = useRef(0);
@@ -66,11 +62,11 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         async function getUpdates(c){
             let maxTime = lastUpdated.current;
             console.log("Maxtime initialized", maxTime);
+            const room = await getRef("newTemp", room_id);
             async function mapUsers(){
                 Object.keys(c).forEach((uid, index) => {
                     const user_info = c[uid];
-                    console.log(user_info);
-                    // Flag this. Change this maybe
+                    // console.log(user_info);
                     const time = user_info.timeStamp;
                     if (!time){
                         return
@@ -109,9 +105,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
             applyingChanges.current = true;
             await mapUsers();
-            console.log("Maxtime updated", maxTime, "lastUpdated", lastUpdated.current);
+            // console.log("Maxtime updated", maxTime, "lastUpdated", lastUpdated.current);
             lastUpdated.current = maxTime;
-            console.log("lastUpdated updated ", lastUpdated.current);
+            // console.log("lastUpdated updated ", lastUpdated.current);
             applyingChanges.current = false;
         }
         
@@ -120,7 +116,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             // const ref = await getRef("newTemp", room_id);
             const roomCode = (await getDoc(await getRef("newTemp", room_id))).data()[0];
             const ref = await getRef("users", room_id);
-            let maxTime = lastUpdated.current;
+            const roomRef = await getRef("newTemp", room_id);
             unsubscribe = onSnapshot(ref, (doc) => {
                 // 2.0: const c = doc.data()[0];
                 // 3.0
@@ -131,7 +127,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     // console.log(roomCode);
                     applyingChanges.current = true;
                     editor.current.session.setValue(roomCode.code);
-                    lastUpdated.current = roomCode.timeStamp;
+                    lastUpdated.current = Timestamp.fromDate(new Date());
                     applyingChanges.current = false;
                     newUser.current = false;
                 } else{
@@ -178,8 +174,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             editor.current.on('change', (e) => {
                 onCodeChange(editor.current.getSession().getValue());
                 if (applyingChanges.current===false){
-                    const time = Timestamp.fromDate(new Date());
-                    e.time = time;
+                    // Create a timestamp, set the timer, add all deltas to that timestamp
+                    // e.user_id = user_id;
+                    e.time = Timestamp.fromDate(new Date());
                     callTransForAce(e);
                 } else{
                     console.log("This input wasn't logged or was injected");
@@ -188,7 +185,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         }
 
         init();
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+        };
     }, []);
 
     // console.log(sessions);
