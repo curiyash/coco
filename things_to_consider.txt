@@ -1,0 +1,23 @@
+What if the user joins in when the changes are being made
+Changes aren't propagated when two users are typing
+simultaneously
+change position of apply changes
+
+textfile not propagating
+switching to correct tab
+refresh code load error
+python syntax highlighting
+clear code not reflected
+not indenting python
+client list shouldn't refresh - 1
+Tabs not scrolling
+undefined on marker cursor
+on refresh, unavailable in client list
+marker update after leaving the room
+marker positions
+textfile mode
+
+Issues
+------
+1) If 2 users are typing simultaneously, then the third user
+isn't able to get both their text completely

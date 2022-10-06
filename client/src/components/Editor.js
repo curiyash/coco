@@ -32,33 +32,18 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     // Initialize CodeMirror
     const editor = useRef(null);
     const newUser = useRef(true);
-    const text = useRef(null);
-    const aceEditor = useRef(null);
     const lastUpdated = useRef(Timestamp.fromDate(new Date(2022, 8, 2)));
     const applyingChanges = useRef(false);
-    const timer = useRef(false);
-    const isSet = useRef(null);
-    const deltas = useRef([]);
-    const prevLineNumber = useRef(0);
+    const timer = useRef(null);
+    const deltas = useRef({});
     const markerMap = useRef({});
+    const time = useRef(null);
     const [sessions, setSessions] = useState({'key':-1});
     const sessionID = useRef(0);
     // const [sessionID, setSessionID] = useState(0);
 
-    // const style = {
-    //     borderLeft: "6px solid green",
-    //     height: `32px`,
-    //     left: `4px`,
-    //     top: `24px`,
-    //     position: "absolute",
-    //     zIndex: 10
-    // }
-
     useEffect(() => {
-        // FireBase();
-        // putIt();
         var unsubscribe;
-
         async function getUpdates(c){
             let maxTime = lastUpdated.current;
             console.log("Maxtime initialized", maxTime);
@@ -74,30 +59,34 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     console.log(time, lastUpdated.current);
                     if (uid!==user_id && newUser.current===false){
                         if (true){
-                            try{
-                                user_info.delta.sort((a, b) => {
-                                    if (a.time<=b.time){
-                                        return -1;
-                                    } else if (a.time>b.time){
-                                        return 1;
-                                    }
-                                })
-                                user_info.delta.forEach((d) => {
-                                    if (lastUpdated.current<d.time){
-                                        const tee = d.time;
-                                        delete d.time;
-                                        var rev = editor.current.session.$undoManager.startNewGroup();
-                                        editor.current.session.doc.applyDelta(d);
-                                        editor.current.session.$undoManager.markIgnored(rev);
-                                        console.log(d.lines);
-                                        if (tee>maxTime){
-                                            maxTime = tee;
-                                        }
-                                    }
-                                })
-                            } catch(err){
-                                console.log(err);
-                            }
+                            // try{
+                            user_info.delta.sort((a, b) => {
+                                console.log(a.time);
+                                console.log(b.time);
+                                if (a.time<=b.time){
+                                    return -1;
+                                } else if (a.time>b.time){
+                                    return 1;
+                                }
+                            })
+                            user_info.delta.forEach((d) => {
+                                if (lastUpdated.current<d.time){
+                                    const updates = d.deltas;
+                                    // const tee = d.time;
+                                    // delete d.time;
+                                    console.log(updates);
+                                    var rev = editor.current.session.$undoManager.startNewGroup();
+                                    editor.current.session.doc.applyDeltas(updates);
+                                    editor.current.session.$undoManager.markIgnored(rev);
+                                    // console.log(d.lines);
+                                }
+                                if (d.time>maxTime){
+                                    maxTime = d.time;
+                                }
+                            })
+                            // } catch(err){
+                            //     console.log(err);
+                            // }
                         }
                     }
                 })
@@ -161,23 +150,40 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 // single
                 // await doTransactionForAce(room_id, delta, user_id);
                 // multi
-                if (delta===null){
-                    alert("Delta is null");
-                    return;
-                }
+                // if (delta===null){
+                //     alert("Delta is null");
+                //     return;
+                // }
                 console.log("Calling a transaction");
-                await doTransactionForAce(room_id, delta, user_id, sessionID.current);
+                // await doTransactionForAce(room_id, delta, user_id, sessionID.current);
+                await doTransactionForAce(room_id, deltas.current[time.current], user_id, time.current);
+                delete deltas.current[time.current];
+                timer.current = null;
                 // await setDelta(room_id, delta, user_id);
-                updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time);
+                updateCode(room_id, 0, editor.current.getSession().getValue(), time.current);
+                console.log("Timer is up");
             }
 
             editor.current.on('change', (e) => {
                 onCodeChange(editor.current.getSession().getValue());
                 if (applyingChanges.current===false){
                     // Create a timestamp, set the timer, add all deltas to that timestamp
-                    // e.user_id = user_id;
-                    e.time = Timestamp.fromDate(new Date());
-                    callTransForAce(e);
+                    console.log("Calling transaction");
+                    let t;
+                    if (timer.current===null){
+                        t = Timestamp.fromDate(new Date());
+                        time.current = t;
+                        deltas.current[t] = [];
+                        console.log("Timer is set");
+                        timer.current = setTimeout(() => {
+                            callTransForAce();
+                        }, 2000);
+                    }
+                    if (time.current!==null){
+                        console.log(time.current);
+                        console.log(deltas.current);
+                        deltas.current[time.current].push(e);
+                    }
                 } else{
                     console.log("This input wasn't logged or was injected");
                 }
@@ -187,6 +193,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         init();
         return () => {
             unsubscribe();
+            if (timer!==null){
+                clearTimeout(timer);
+            }
         };
     }, []);
 
