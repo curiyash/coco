@@ -132,7 +132,6 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     newUser.current = false;
                 } else{
                     // Get all user deltas and update them
-
                     getUpdates(c);
                 }
             })
@@ -263,9 +262,6 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         <ScrollableTabsButtonAuto className="tabs" sessions={sessions} editor={editor}/>
         <Button variant="contained" onClick={addNewSession}>+</Button>
         <div id="editor-ace">
-            {/* <textarea id="realtime-editor">
-            </textarea> */}
-            {/* {update()} */}
         </div>
     </div>
   )
