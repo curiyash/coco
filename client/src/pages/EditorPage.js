@@ -3,7 +3,6 @@ import Client from '../components/Client'
 import { useState } from 'react'
 import Editor from '../components/Editor'
 import {v4 as uuid} from "uuid";
-import { initSocket } from '../socket'
 import ACTIONS from "../Actions";
 import { useLocation, useNavigate, Navigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -33,7 +32,7 @@ const EditorPage = () => {
     const codeRef = useRef(null);
     const { room_id } = useParams();
     const [clients, setClients] = useState([]);
-    const [mode, setMode] = useState('textfile');
+    const [mode, setMode] = useState('text');
     const [fileName, setFileName] = useState("Untitled.txt");
     const reactNavigator = useNavigate();
     const left = useRef(263);
@@ -97,22 +96,22 @@ const EditorPage = () => {
             // console.log(ref);
             unsubscribe = onSnapshot(ref, (doc) => {
                 const c = doc.data();
-                    // c.sort((a, b) => {
-                    //     const u1 = a.username.toLowerCase();
-                    //     const u2 = b.username.toLowerCase();
-                    //     if (u1<u2){
-                    //         return 1;
-                    //     } else if (u1>=u2){
-                    //         return -1;
-                    //     }
-                    // })
+                // c.sort((a, b) => {
+                //     const u1 = a.username.toLowerCase();
+                //     const u2 = b.username.toLowerCase();
+                //     if (u1<u2){
+                //         return 1;
+                //     } else if (u1>=u2){
+                //         return -1;
+                //     }
+                // })
                 const users = Object.values(c);
                 users.sort((a, b) => {
                     const u1 = a.username.toLowerCase();
                     const u2 = b.username.toLowerCase();
-                    if (u1<u2){
+                    if (u1<=u2){
                         return -1;
-                    } else if (u1>=u2){
+                    } else if (u1>u2){
                         return 1;
                     } 
                 })

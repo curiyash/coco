@@ -17,7 +17,6 @@ import 'codemirror/mode/crystal/crystal.js'
 
 import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
-import { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions, setDelta, getQuery} from '../firebase';
 import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy, getDoc } from 'firebase/firestore';
@@ -36,6 +35,7 @@ function FireBase(){
 const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM, onSessionChange}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
+    const newUser = useRef(true);
     const text = useRef(null);
     const aceEditor = useRef(null);
     const lastUpdated = useRef(Timestamp.fromDate(new Date(2022, 8, 2)));
@@ -62,6 +62,58 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         // FireBase();
         // putIt();
         var unsubscribe;
+
+        async function getUpdates(c){
+            let maxTime = lastUpdated.current;
+            console.log("Maxtime initialized", maxTime);
+            async function mapUsers(){
+                Object.keys(c).forEach((uid, index) => {
+                    const user_info = c[uid];
+                    console.log(user_info);
+                    // Flag this. Change this maybe
+                    const time = user_info.timeStamp;
+                    if (!time){
+                        return
+                    }
+                    console.log(time, lastUpdated.current);
+                    if (uid!==user_id && newUser.current===false){
+                        if (true){
+                            try{
+                                user_info.delta.sort((a, b) => {
+                                    if (a.time<=b.time){
+                                        return -1;
+                                    } else if (a.time>b.time){
+                                        return 1;
+                                    }
+                                })
+                                user_info.delta.forEach((d) => {
+                                    if (lastUpdated.current<d.time){
+                                        const tee = d.time;
+                                        delete d.time;
+                                        var rev = editor.current.session.$undoManager.startNewGroup();
+                                        editor.current.session.doc.applyDelta(d);
+                                        editor.current.session.$undoManager.markIgnored(rev);
+                                        console.log(d.lines);
+                                        if (tee>maxTime){
+                                            maxTime = tee;
+                                        }
+                                    }
+                                })
+                            } catch(err){
+                                console.log(err);
+                            }
+                        }
+                    }
+                })
+            }
+
+            applyingChanges.current = true;
+            await mapUsers();
+            console.log("Maxtime updated", maxTime, "lastUpdated", lastUpdated.current);
+            lastUpdated.current = maxTime;
+            console.log("lastUpdated updated ", lastUpdated.current);
+            applyingChanges.current = false;
+        }
         
         async function get(){
             // const ref = await getRef("temp", room_id);
@@ -75,58 +127,17 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 const c = doc.data();
                 console.log(c);
 
-                if (isNew==true){
-                    console.log(roomCode);
+                if (newUser.current==true){
+                    // console.log(roomCode);
                     applyingChanges.current = true;
                     editor.current.session.setValue(roomCode.code);
-                    applyingChanges.current = false;
                     lastUpdated.current = roomCode.timeStamp;
-                    isNew = false;
+                    applyingChanges.current = false;
+                    newUser.current = false;
                 } else{
                     // Get all user deltas and update them
-                    applyingChanges.current = true;
-                    Object.keys(c).forEach((uid, index) => {
-                        const user_info = c[uid];
-                        console.log(user_info);
-                        const time = user_info.timeStamp;
-                        if (!time){
-                            return
-                        }
-                        console.log(time, lastUpdated.current);
-                        console.log(lastUpdated.current<time);
-                        if (uid!==user_id && isNew===false && lastUpdated.current<time){
-                            if (true){
-                                try{
-                                    user_info.delta.sort((a, b) => {
-                                        if (a.time<b.time){
-                                            return -1;
-                                        } else if (a.time>b.time){
-                                            return 1;
-                                        } else{
-                                            return 0;
-                                        }
-                                    })
-                                    user_info.delta.forEach((d) => {
-                                        if (lastUpdated.current<d.time){
-                                            const tee = d.time;
-                                            delete d.time;
-                                            var rev = editor.current.session.$undoManager.startNewGroup();
-                                            editor.current.session.doc.applyDelta(d);
-                                            editor.current.session.$undoManager.markIgnored(rev);
-                                            console.log(d.lines);
-                                            if (tee>maxTime){
-                                                maxTime = tee;
-                                            }
-                                        }
-                                    })
-                                } catch(err){
-                                    console.log(err);
-                                }
-                            }
-                        }
-                    })
-                    applyingChanges.current = false;
-                    lastUpdated.current = maxTime;
+
+                    getUpdates(c);
                 }
             })
         }
@@ -156,7 +167,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 // multi
                 if (delta===null){
                     alert("Delta is null");
+                    return;
                 }
+                console.log("Calling a transaction");
                 await doTransactionForAce(room_id, delta, user_id, sessionID.current);
                 // await setDelta(room_id, delta, user_id);
                 updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time);
@@ -168,6 +181,8 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     const time = Timestamp.fromDate(new Date());
                     e.time = time;
                     callTransForAce(e);
+                } else{
+                    console.log("This input wasn't logged or was injected");
                 }
             })
         }
