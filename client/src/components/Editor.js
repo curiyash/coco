@@ -87,48 +87,55 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         var modeChange;
         var fileNameChange;
         var uploadChange;
+        let ref;
+        let code;
+        let modeRef;
+        let fileNameRef;
+        let uploadRef;
 
         async function getUpdates(c){
             let maxTime = lastUpdated.current;
             // console.log("Maxtime initialized", maxTime);
             async function mapUsers(){
-                Object.keys(c).forEach((uid, index) => {
-                    const user_info = c[uid];
-                    // console.log(user_info);
-                    // console.log(uid, user_id);
-                    if (uid!==user_id && newUser.current===false){
-                        if ("delta" in user_info){
-                            try{
-                                Object.values(user_info.delta).forEach((d) => {
-                                    let truth = false;
-                                    console.log(lastUpdated.current, d.time);
-                                    if (lastUpdated.current.seconds<d.time.seconds){
-                                        console.log("Here1");
-                                        truth = true;
-                                    } else if (lastUpdated.current.seconds===d.time.seconds && lastUpdated.current.nanoseconds<d.time.nanoseconds){
-                                        console.log("Here2");
-                                        truth = true;
-                                    }
-                                    console.log(d, truth);
-                                    if (truth===true){
-                                        const tee = d.time;
-                                        delete d.time;
-                                        var rev = editor.current.session.$undoManager.startNewGroup();
-                                        editor.current.session.doc.applyDelta(d);
-                                        editor.current.session.$undoManager.markIgnored(rev);
-                                        if (tee.seconds>maxTime.seconds){
-                                            maxTime = tee;
-                                        } else if (tee.seconds===maxTime.seconds && tee.nanoseconds>maxTime.nanoseconds){
-                                            maxTime = tee;
+                if (c!==null){
+                    Object.keys(c).forEach((uid, index) => {
+                        const user_info = c[uid];
+                        // console.log(user_info);
+                        // console.log(uid, user_id);
+                        if (uid!==user_id && newUser.current===false){
+                            if ("delta" in user_info){
+                                try{
+                                    Object.values(user_info.delta).forEach((d) => {
+                                        let truth = false;
+                                        console.log(lastUpdated.current, d.time);
+                                        if (lastUpdated.current.seconds<d.time.seconds){
+                                            console.log("Here1");
+                                            truth = true;
+                                        } else if (lastUpdated.current.seconds===d.time.seconds && lastUpdated.current.nanoseconds<d.time.nanoseconds){
+                                            console.log("Here2");
+                                            truth = true;
                                         }
-                                    }
-                                })
-                            } catch(err){
-                                console.log(err);
+                                        console.log(d, truth);
+                                        if (truth===true){
+                                            const tee = d.time;
+                                            delete d.time;
+                                            var rev = editor.current.session.$undoManager.startNewGroup();
+                                            editor.current.session.doc.applyDelta(d);
+                                            editor.current.session.$undoManager.markIgnored(rev);
+                                            if (tee.seconds>maxTime.seconds){
+                                                maxTime = tee;
+                                            } else if (tee.seconds===maxTime.seconds && tee.nanoseconds>maxTime.nanoseconds){
+                                                maxTime = tee;
+                                            }
+                                        }
+                                    })
+                                } catch(err){
+                                    console.log(err);
+                                }
                             }
                         }
-                    }
-                })
+                    })
+                }
             }
 
             applyingChanges.current = true;
@@ -167,11 +174,11 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         async function getFunc(){
             // const ref = await getRef("temp", room_id);
             // const ref = await getRef("newTemp", room_id);
-            const ref = await getRef(`users/${room_id}`);
-            const code = await getCode(room_id);
-            const modeRef = await getRef(`rooms/${room_id}/mode`);
-            const fileNameRef = await getRef(`rooms/${room_id}/filename`);
-            const uploadRef = await getRef(`rooms/${room_id}/isUpload`);
+            ref = await getRef(`users/${room_id}`);
+            code = await getCode(room_id);
+            modeRef = await getRef(`rooms/${room_id}/mode`);
+            fileNameRef = await getRef(`rooms/${room_id}/filename`);
+            uploadRef= await getRef(`rooms/${room_id}/isUpload`);
 
             uploadChange = onValue(uploadRef, (snapshot) => {
                 const status = snapshot.val();
@@ -254,10 +261,10 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
         init();
         return () => {
-            off(unsubscribe);
-            off(modeChange);
-            off(fileNameChange);
-            off(uploadChange);
+            off(ref);
+            off(modeRef)
+            off(fileNameRef)
+            off(uploadRef)
         };
     }, []);
 

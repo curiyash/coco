@@ -12,6 +12,7 @@ import FileSaver from 'file-saver';
 import { mimeTypes } from './mimeTypes';
 import { addUser, getRef, leftUser } from '../firebase'
 import { onSnapshot } from 'firebase/firestore';
+import { off } from 'firebase/database';
 import AceEditor from "react-ace";
 import { updateLang, updateNameOfFile } from '../firebase';
 
@@ -92,9 +93,10 @@ const EditorPage = () => {
         }
 
         let unsubscribe;
+        let ref;
         async function getUsers(){
             // const ref = await getRef("users", room_id);
-            const ref = await getRef(`roomies/${room_id}`);
+            ref = await getRef(`roomies/${room_id}`);
             // if (username!==location.state.username){
             //     toast.success(`${username} has joined the room`);
             // }
@@ -103,15 +105,17 @@ const EditorPage = () => {
 
             unsubscribe = onValue(ref, (snapshot) => {
                 const data = snapshot.val();
-                const uids = Object.values(data);
-                uids.sort((a, b) => {
-                    if (a<=b){
-                        return 1;
-                    } else{
-                        return -1;
-                    }
-                })
-                setClients(uids);
+                if (data!==null){
+                    const uids = Object.values(data);
+                    uids.sort((a, b) => {
+                        if (a<=b){
+                            return 1;
+                        } else{
+                            return -1;
+                        }
+                    })
+                    setClients(uids);
+                }
             })
 
             // unsubscribe = onSnapshot(ref, (doc) => {
@@ -146,7 +150,7 @@ const EditorPage = () => {
             window.removeEventListener('beforeunload', () => {
                 console.log("Successfully exited");
             })
-            unsubscribe();
+            off(ref);
         }
     }, []);
 
@@ -162,6 +166,7 @@ const EditorPage = () => {
 
     async function leaveRoom(){
         await leftUser(room_id, location.state?.user_id);
+        console.log("Deleted user");
         reactNavigator("/");
     }
 
@@ -260,7 +265,7 @@ const EditorPage = () => {
             <button className="btn leaveBtn" onClick={leaveRoom}>Leave the Room</button>
             <button className="btn" onClick={downloadCode}>Download</button>
             <button className="btn" onClick={uploadCode} type="file">Upload</button>
-            <input className="btn" onChange={readSingleFile} type="file" id="file-input" className="open" style={{"display": "none"}}/>
+            <input className="btn" onChange={readSingleFile} type="file" id="file-input" style={{"display": "none"}}/>
         </div>
         <div className='editorWrap'>
             {/* {console.log("Here")} */}
