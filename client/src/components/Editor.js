@@ -30,6 +30,7 @@ import { query, where } from "firebase/firestore";
 import { off, onValue, get, update } from 'firebase/database';
 import Dropdown from 'react-dropdown';
 import "ace-builds/src-noconflict/theme-dracula";
+import { Stack, TextField } from '@mui/material';
 
 const themes = ['ambiance', 'chaos', 'chrome', 'cloud9_day', 'cloud9_night', 'cloud9_night_low_color', 'clouds', 'clouds_midnight', 'cobalt', 'crimson_editor', 'dawn', 'dracula', 'dreamweaver', 'eclipse', 'github', 'gob', 'gruvbox', 'gruvbox_dark_hard', 'gruvbox_light_hard', 'idle_fingers', 'iplastic', 'katzenmilch', 'kr_theme', 'kuroir', 'merbivore', 'merbivore_soft', 'monokai', 'mono_industrial', 'nord_dark', 'one_dark', 'pastel_on_dark', 'solarized_dark', 'solarized_light', 'sqlserver', 'terminal', 'textmate', 'tomorrow', 'tomorrow_night', 'tomorrow_night_blue', 'tomorrow_night_bright', 'tomorrow_night_eighties', 'twilight', 'vibrant_ink', 'xcode']
 
@@ -107,15 +108,15 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                                 try{
                                     Object.values(user_info.delta).forEach((d) => {
                                         let truth = false;
-                                        console.log(lastUpdated.current, d.time);
+                                        // console.log(lastUpdated.current, d.time);
                                         if (lastUpdated.current.seconds<d.time.seconds){
-                                            console.log("Here1");
+                                            // console.log("Here1");
                                             truth = true;
                                         } else if (lastUpdated.current.seconds===d.time.seconds && lastUpdated.current.nanoseconds<d.time.nanoseconds){
-                                            console.log("Here2");
+                                            // console.log("Here2");
                                             truth = true;
                                         }
-                                        console.log(d, truth);
+                                        // console.log(d, truth);
                                         if (truth===true){
                                             const tee = d.time;
                                             delete d.time;
@@ -184,9 +185,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 const status = snapshot.val();
                 if (status===true){
                     async function gettingUpload(){
-                        console.log("Trying to call");
+                        // console.log("Trying to call");
                         const upload = await getCode(room_id);
-                        console.log(upload);
+                        // console.log(upload);
                         applyingChanges.current = true;
                         editor.current.session.setValue(upload.code);
                         lastUpdated.current = upload.timeStamp;
@@ -240,7 +241,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     alert("Delta is null");
                     return;
                 }
-                console.log("Calling a transaction");
+                // console.log("Calling a transaction");
                 await doTransactionForAce(room_id, delta, user_id, sessionID.current);
                 // await setDelta(room_id, delta, user_id);
                 updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time, user_id, false);
@@ -262,7 +263,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                     e.time = Timestamp.fromDate(new Date());
                     callTransForAce(e);
                 } else{
-                    console.log("This input wasn't logged or was injected");
+                    // console.log("This input wasn't logged or was injected");
                 }
             })
         }
@@ -344,9 +345,19 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         await updateSessions(room_id, sessionID, newSession);
     }
 
+    function changeFontSize(e){
+        // console.log("I'm called");
+        editor.current.setOptions({
+            fontSize: e.target.value,
+        })
+    }
+
   return (
     <div>
-        <Dropdown options={themes} value={theme} onChange={_onSelectTheme} placeholder="Select an option" className="dropdown"/>
+        <Stack direction="row" spacing={1}>
+            <Dropdown options={themes} value={theme} onChange={_onSelectTheme} placeholder="Select an option" className="dropdown"/>
+            {/* <input type="number" min="1" onChange={changeFontSize}></input> */}
+        </Stack>
         {/* <ScrollableTabsButtonAuto className="tabs" sessions={sessions} editor={editor}/> */}
         {/* <Button variant="contained" onClick={addNewSession}>+</Button> */}
         <div id="editor-ace">

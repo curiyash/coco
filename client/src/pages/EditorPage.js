@@ -112,7 +112,7 @@ const EditorPage = () => {
                 setMarkers(data);
                 if (data!==null){
                     const uids = Object.values(data);
-                    console.log(uids);
+                    // console.log(uids);
                     uids.sort((a, b) => {
                         if (a.username<=b.username){
                             return 1;
@@ -154,10 +154,10 @@ const EditorPage = () => {
         // Always clear the listeners, else it causes memory leak
         return () => {
             window.removeEventListener('beforeunload', () => {
-                console.log("Successfully exited");
+                // console.log("Successfully exited");
             })
             window.removeEventListener('popstate', () => {
-                console.log("Successfully exited");
+                // console.log("Successfully exited");
             })
             off(ref);
         }
@@ -175,7 +175,7 @@ const EditorPage = () => {
 
     async function leaveRoom(){
         await leftUser(room_id, location.state?.user_id);
-        console.log("Deleted user");
+        // console.log("Deleted user");
         reactNavigator("/");
     }
 
@@ -230,9 +230,9 @@ const EditorPage = () => {
     }
 
     function readSingleFile(e) {
-        console.log("Here");
+        // console.log("Here");
         var file = e.target.files[0];
-        console.log(file);
+        // console.log(file);
         if (!file) {
           return;
         }
@@ -246,7 +246,7 @@ const EditorPage = () => {
           setFileName(file.name);
           updateNameOfFile(room_id, file.name, session.current);
           if (onUpload.current!==null){
-            console.log("Setting");
+            // console.log("Setting");
             onUpload.current(contents);
           }
         };
