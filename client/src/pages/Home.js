@@ -43,14 +43,14 @@ const Home = () => {
     }
 
     return (
-        <div className="homepage-wrapper">
-            <div className='form-wrapper'>
+        <div className="homePageWrapper">
+            <div className='formWrapper'>
                 {/* TODO Add favicon and Home page image */}
-                <h4 className='label-room'>Room ID</h4>
-                <div>
+                <h4 className='mainLabel'>Room ID</h4>
+                <div className='inputGroup'>
                     <input 
                         type="text"
-                        className='input-text'
+                        className='inputBox'
                         placeholder='Enter Room ID'
                         value={room_id}
                         onChange={(e) => {setRoom_id(e.target.value)}}
@@ -59,16 +59,16 @@ const Home = () => {
                     </input>
                     <input
                         type="text"
-                        className='input-text'
+                        className='inputBox'
                         placeholder='Username'
                         value={username}
                         onChange={(e) => {setUsername(e.target.value)}}
                         onKeyUp={handleInputEnter}
                     >
                     </input>
-                    <button onClick={joinRoom} className='btn join-btn'>Join</button>
-                    <span className='create-info'>
-                        <a onClick={createNewRoom} href="" className="create-new-room">
+                    <button onClick={joinRoom} className='btn joinBtn'>Join</button>
+                    <span className='createInfo'>
+                        <a onClick={createNewRoom} href="" className="createNewBtn">
                             Create New Room &nbsp;
                         </a>
                     </span>

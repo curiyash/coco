@@ -96,19 +96,32 @@ footer a {
 
 .joinBtn,
 .leaveBtn {
-  background: #4aed88;
-  width: 100px;
-  margin-left: auto;
+  color: white;
+  background: rgb(191, 84, 84);
+  /* width: 100px; */
+  /* margin-left: auto; */
 }
 
-.joinBtn:hover,
+.fileBtn {
+  background: #4aed88;
+}
+
 .leaveBtn:hover {
-  background: #2b824c;
+  color: white;
+  background: rgb(230, 50, 50);
+}
+
+.joinBtn:hover, .fileBtn:hover {
+  background: #8efab8;
 }
 
 .createInfo {
   margin: 0 auto;
   margin-top: 20px;
+}
+
+.dropdownAside {
+  width: 101%;
 }
 
 .createNewBtn {
@@ -174,5 +187,19 @@ footer a:hover {
   min-height: calc(100vh - 20px);
   font-size: 20px;
   line-height: 1.6;
+  padding-top: 20px;
+}
+
+.fileNameInput{
+  background: transparent;
+  border-style: solid;
+  border-width: 1px;
+  padding: 10px;
+  width: 90%;
+  color: white;
+  font-size: 21px;
+}
+
+.clientsList {
   padding-top: 20px;
 }

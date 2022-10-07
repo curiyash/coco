@@ -15,6 +15,7 @@ import { onSnapshot } from 'firebase/firestore';
 import { off } from 'firebase/database';
 import AceEditor from "react-ace";
 import { updateLang, updateNameOfFile } from '../firebase';
+import { Box, Stack } from '@mui/material';
 
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
 import "../../node_modules/ace-builds/src-noconflict/ext-modelist";
@@ -58,6 +59,11 @@ const EditorPage = () => {
             toast.success("Joined the room successfully!");
 
             window.addEventListener('beforeunload', async function(e){
+                e.preventDefault();
+                await leftUser(room_id, location.state?.user_id);
+            })
+
+            window.addEventListener('popstate', async function(e){
                 e.preventDefault();
                 await leftUser(room_id, location.state?.user_id);
             })
@@ -148,6 +154,9 @@ const EditorPage = () => {
         // Always clear the listeners, else it causes memory leak
         return () => {
             window.removeEventListener('beforeunload', () => {
+                console.log("Successfully exited");
+            })
+            window.removeEventListener('popstate', () => {
                 console.log("Successfully exited");
             })
             off(ref);
@@ -250,21 +259,29 @@ const EditorPage = () => {
         <div className='aside'>
             <div className='asideInner'>
                 <div className='logo'>
-                    Logo Goes Here
+                    <input type="text" value={fileName} onChange={updateFileName} onKeyUp={emitFileName} className="fileNameInput"></input>
+                    <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" className='dropdownAside'/>
                 </div>
-                <input type="text" value={fileName} onChange={updateFileName} onKeyUp={emitFileName}></input>
+                <div className='clientsList'>
+                    {clients.map((client, id) => {
+                        if (location.state?.user_id===id){
+                            return <Client key={id} username={client} underline={true}/>
+                        } else{
+                            return <Client key={id} username={client} underline={false}/>
+                        }
+                    })}
+                </div>
             </div>
-            <h3>Connected</h3>
-            <div className='clientsList'>
-                {clients.map((client, id) => {
-                    return <Client key={id} username={client}/>
-                })}
+            <Box sx={{ width: '100%' }}>
+                <Stack spacing={1}>
+                    <button className="btn copyBtn" onClick={copyRoomID}>Copy Room ID</button>
+                    <button className="btn fileBtn" onClick={downloadCode}>Download</button>
+                    <button className="btn fileBtn" onClick={uploadCode} type="file">Upload</button>
+                </Stack>
+            </Box>
+            <div className='leaveOption'>
+                <button className="btn leaveBtn" onClick={leaveRoom}>Leave the Room</button>
             </div>
-            <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" />
-            <button className="btn copyBtn" onClick={copyRoomID}>Copy Room ID</button>
-            <button className="btn leaveBtn" onClick={leaveRoom}>Leave the Room</button>
-            <button className="btn" onClick={downloadCode}>Download</button>
-            <button className="btn" onClick={uploadCode} type="file">Upload</button>
             <input className="btn" onChange={readSingleFile} type="file" id="file-input" style={{"display": "none"}}/>
         </div>
         <div className='editorWrap'>
