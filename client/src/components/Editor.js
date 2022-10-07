@@ -37,7 +37,7 @@ themes.forEach((theme) => {
     require(`ace-builds/src-noconflict/theme-${theme}`);
 })
 
-const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM, onSessionChange}) => {
+const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM, onSessionChange, onUploadInit}) => {
     // Initialize CodeMirror
     const editor = useRef(null);
     const newUser = useRef(true);
@@ -68,6 +68,12 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         setTheme(option.label);
         editor.current.setTheme(`ace/theme/${option.label}`);
     }
+
+    async function onUpload(code){
+        editor.current.session.setValue(code);
+    }
+
+    onUploadInit(onUpload);
 
     useEffect(() => {
         // FireBase();

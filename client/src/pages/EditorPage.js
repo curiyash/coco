@@ -45,6 +45,7 @@ const EditorPage = () => {
     const session = useRef(0);
     let createMarker = null;
     const lineHeightRef = useRef("24px");
+    const onUpload = useRef(null);
 
     // useRef: does not rerender component when state changes
     // available on rerender
@@ -208,6 +209,34 @@ const EditorPage = () => {
         }
     }
 
+    function uploadCode(e){
+        e.preventDefault();
+        const input = document.getElementById('file-input');
+        input.click();
+    }
+
+    function readSingleFile(e) {
+        console.log("Here");
+        var file = e.target.files[0];
+        console.log(file);
+        if (!file) {
+          return;
+        }
+        var reader = new FileReader();
+        reader.readAsText(file);
+        reader.onload = function(e) {
+          var contents = e.target.result;
+          var mode = modelist.getModeForPath(file.name).mode.split('/')[2];
+          setMode(mode);
+          updateLang(room_id, mode, session.current);
+          setFileName(file.name);
+          updateNameOfFile(room_id, file.name, session.current);
+          if (onUpload.current!==null){
+            onUpload.current(contents);
+          }
+        };
+    }
+
     <Navigate></Navigate>
 
   return (
@@ -229,10 +258,12 @@ const EditorPage = () => {
             <button className="btn copyBtn" onClick={copyRoomID}>Copy Room ID</button>
             <button className="btn leaveBtn" onClick={leaveRoom}>Leave the Room</button>
             <button className="btn" onClick={downloadCode}>Download</button>
+            <button className="btn" onClick={uploadCode} type="file">Upload</button>
+            <input className="btn" onChange={readSingleFile} type="file" id="file-input" className="open" style={{"display": "none"}}/>
         </div>
         <div className='editorWrap'>
             {/* {console.log("Here")} */}
-            <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}} cM={(crm) => createMarker=crm} onSessionChange={(sessionID) => {session.current=sessionID}}/>
+            <Editor isNew={location.state?.isNew} room_id={room_id} onCodeChange={(code) => {codeRef.current = code}} mode={mode} onModeChange={(mode) => {setMode(mode)}} user_id={location.state?.user_id} username={location.state?.username} onLineHeightChange={(height) => {lineHeightRef.current = height}} fileName={fileName} onFileNameChange={(fName) => {setFileName(fName)}} cM={(crm) => createMarker=crm} onSessionChange={(sessionID) => {session.current=sessionID}} onUploadInit={(func) => {onUpload.current=func}}/>
         </div>
     </div>
   )
