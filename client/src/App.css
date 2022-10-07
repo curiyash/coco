@@ -94,7 +94,6 @@ footer a {
   transition: all 0.3s ease-in-out;
 }
 
-.joinBtn,
 .leaveBtn {
   color: white;
   background: rgb(191, 84, 84);
@@ -102,7 +101,7 @@ footer a {
   /* margin-left: auto; */
 }
 
-.fileBtn {
+.fileBtn, .joinBtn {
   background: #4aed88;
 }
 
@@ -112,7 +111,7 @@ footer a {
 }
 
 .joinBtn:hover, .fileBtn:hover {
-  background: #8efab8;
+  background: #368654;
 }
 
 .createInfo {

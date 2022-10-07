@@ -75,7 +75,7 @@ const Home = () => {
                 </div>
             </div>
             <footer>
-                <h4>Built by curiyash</h4>
+                <h4>Built by <a href="https://github.com/curiyash">curiyash</a></h4>
             </footer>
         </div>
     )
