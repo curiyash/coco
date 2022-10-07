@@ -54,6 +54,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     const [sessions, setSessions] = useState({'key':-1});
     const sessionID = useRef(0);
     const [theme, setTheme] = useState('dracula');
+    const [fontSize, setFontSize] = useState(12);
     // const [sessionID, setSessionID] = useState(0);
 
     // const style = {
@@ -347,16 +348,16 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
     function changeFontSize(e){
         // console.log("I'm called");
-        editor.current.setOptions({
-            fontSize: e.target.value,
-        })
+        setFontSize(e.target.value);
+        editor.current.setFontSize(`${e.target.value<10?10:e.target.value}px`);
+        // setFontSize(e.target.value<10?10:e.target.value);
     }
 
   return (
     <div>
         <Stack direction="row" spacing={1}>
             <Dropdown options={themes} value={theme} onChange={_onSelectTheme} placeholder="Select an option" className="dropdown"/>
-            {/* <input type="number" min="1" onChange={changeFontSize}></input> */}
+            <input type="number" min={10} value={fontSize} onChange={changeFontSize}></input>
         </Stack>
         {/* <ScrollableTabsButtonAuto className="tabs" sessions={sessions} editor={editor}/> */}
         {/* <Button variant="contained" onClick={addNewSession}>+</Button> */}
