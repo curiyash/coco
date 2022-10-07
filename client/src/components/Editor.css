@@ -17,3 +17,24 @@
 .dropdown {
     width: 184px;
 }
+
+.tooltip {
+    visibility: hidden;
+    width: fit-content;
+    color: white;
+    text-align: center;
+
+    position: absolute;
+    z-index: 10;
+
+    padding-right: 5px;
+    padding-left: 1px;
+
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.vl:hover .tooltip{
+    visibility: visible;
+    opacity: 1;
+}

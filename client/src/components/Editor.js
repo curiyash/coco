@@ -18,7 +18,7 @@ import 'codemirror/mode/crystal/crystal.js'
 import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import toast from 'react-hot-toast';
-import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions, setDelta, getQuery, getCode} from '../firebase';
+import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions, setDelta, getQuery, getCode, updateUser} from '../firebase';
 import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy, getDoc } from 'firebase/firestore';
 import { runTransaction } from 'firebase/firestore';
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
@@ -246,7 +246,13 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time, user_id, false);
             }
 
-            editor.current.on('cursor')
+            editor.current.session.selection.on('changeCursor', (e) => {
+                const lineNumber = editor.current.getCursorPosition().row;
+                // if (prevLineNumber.current!==lineNumber){
+                if (true){
+                    updateUser(room_id, user_id, lineNumber);
+                }
+            })
 
             editor.current.on('change', (e) => {
                 onCodeChange(editor.current.getSession().getValue());
@@ -283,16 +289,16 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         const pos = editor.current.renderer.textToScreenCoordinates(user.line, 0);
         // console.log(pos.pageY);
         const y = pos.pageY-39.2;
-        if (user_id in markerMap.current){
+        if (id in markerMap.current){
             // console.log(markerMap);
             // console.log(user_id);
             // console.log(markerMap.current[user_id]);
-            b.style.borderLeft = `4.2px solid #${markerMap.current[user_id]}`;
-            c.style.backgroundColor = `#${markerMap.current[user_id]}`;
+            b.style.borderLeft = `4.2px solid #${markerMap.current[id]}`;
+            c.style.backgroundColor = `#${markerMap.current[id]}`;
             // console.log("Already present");
         } else{
             var randomColor = Math.floor(Math.random()*16777215).toString(16);
-            markerMap.current[user_id] = randomColor;
+            markerMap.current[id] = randomColor;
             // console.log(markerMap.current);
             b.style.borderLeft = `4.2px solid #${randomColor}`;
             c.style.backgroundColor = `#${randomColor}`;

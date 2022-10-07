@@ -70,13 +70,11 @@ const EditorPage = () => {
         }
 
         async function setMarkers(c){
-            const markers = document.getElementsByClassName('vl');
-            console.log(markers);
-            if (markers){
-                Array.from(markers).forEach((marker) => {
-                    marker.remove();
-                })
-            }
+            const boxes = document.querySelectorAll('.vl');
+                boxes.forEach(box => {
+                box.remove();
+            });
+
             if (createMarker!==null){
                 // console.log("Setting markers");
                 Object.keys(c).forEach((uid) => {
