@@ -20,6 +20,7 @@ import ace from "../../node_modules/ace-builds/src-noconflict/ace";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/theme-dracula";
 import "ace-builds/src-noconflict/ext-language_tools";
+import { onValue } from 'firebase/database';
 
 const EditorPage = () => {
     // useLocation: Like useState but for current URL
@@ -88,35 +89,51 @@ const EditorPage = () => {
 
         let unsubscribe;
         async function getUsers(){
-            const ref = await getRef("users", room_id);
+            // const ref = await getRef("users", room_id);
+            const ref = await getRef("roomies", room_id);
             // if (username!==location.state.username){
             //     toast.success(`${username} has joined the room`);
             // }
             // console.log("Ref");
             // console.log(ref);
-            unsubscribe = onSnapshot(ref, (doc) => {
-                const c = doc.data();
-                // c.sort((a, b) => {
-                //     const u1 = a.username.toLowerCase();
-                //     const u2 = b.username.toLowerCase();
-                //     if (u1<u2){
-                //         return 1;
-                //     } else if (u1>=u2){
-                //         return -1;
-                //     }
-                // })
-                const users = Object.values(c);
-                users.sort((a, b) => {
-                    const u1 = a.username.toLowerCase();
-                    const u2 = b.username.toLowerCase();
-                    if (u1<=u2){
-                        return -1;
-                    } else if (u1>u2){
+
+            unsubscribe = onValue(ref, (snapshot) => {
+                const data = snapshot.val();
+                const uids = Object.values(data);
+                uids.sort((a, b) => {
+                    if (a<=b){
                         return 1;
-                    } 
+                    } else{
+                        return -1;
+                    }
                 })
-                setClients(users);
+                setClients(uids);
             })
+
+            // unsubscribe = onSnapshot(ref, (doc) => {
+            //     const c = doc.data();
+            //     console.log(c);
+            //     // c.sort((a, b) => {
+            //     //     const u1 = a.username.toLowerCase();
+            //     //     const u2 = b.username.toLowerCase();
+            //     //     if (u1<u2){
+            //     //         return 1;
+            //     //     } else if (u1>=u2){
+            //     //         return -1;
+            //     //     }
+            //     // })
+            //     const users = Object.values(c);
+            //     users.sort((a, b) => {
+            //         const u1 = a.username.toLowerCase();
+            //         const u2 = b.username.toLowerCase();
+            //         if (u1<=u2){
+            //             return -1;
+            //         } else if (u1>u2){
+            //             return 1;
+            //         } 
+            //     })
+            //     setClients(users);
+            // })
         }
         init();
         getUsers();
@@ -199,7 +216,7 @@ const EditorPage = () => {
             <h3>Connected</h3>
             <div className='clientsList'>
                 {clients.map((client, id) => {
-                    return <Client key={id} username={client.username}/>
+                    return <Client key={id} username={client}/>
                 })}
             </div>
             <Dropdown options={options} value={mode} onChange={_onSelect} placeholder="Select an option" />

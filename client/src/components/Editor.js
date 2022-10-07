@@ -18,7 +18,7 @@ import 'codemirror/mode/crystal/crystal.js'
 import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import toast from 'react-hot-toast';
-import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions, setDelta, getQuery} from '../firebase';
+import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, updateLine, initSession, updateSessions, setDelta, getQuery, getCode} from '../firebase';
 import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy, getDoc } from 'firebase/firestore';
 import { runTransaction } from 'firebase/firestore';
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
@@ -27,6 +27,7 @@ import Button from '@mui/material/Button';
 import ScrollableTabsButtonAuto from './Tabs';
 import { onLog } from 'firebase/app';
 import { query, where } from "firebase/firestore";
+import { off, onValue, get } from 'firebase/database';
 
 const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM, onSessionChange}) => {
     // Initialize CodeMirror
@@ -61,36 +62,35 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
         async function getUpdates(c){
             let maxTime = lastUpdated.current;
-            console.log("Maxtime initialized", maxTime);
+            // console.log("Maxtime initialized", maxTime);
             const room = await getRef("newTemp", room_id);
             async function mapUsers(){
                 Object.keys(c).forEach((uid, index) => {
                     const user_info = c[uid];
                     // console.log(user_info);
-                    const time = user_info.timeStamp;
-                    if (!time){
-                        return
-                    }
-                    console.log(time, lastUpdated.current);
+                    // console.log(uid, user_id);
                     if (uid!==user_id && newUser.current===false){
-                        if (true){
+                        if ("delta" in user_info){
                             try{
-                                user_info.delta.sort((a, b) => {
-                                    if (a.time<=b.time){
-                                        return -1;
-                                    } else if (a.time>b.time){
-                                        return 1;
+                                Object.values(user_info.delta).forEach((d) => {
+                                    let truth = false;
+                                    console.log(lastUpdated.current, d.time);
+                                    if (lastUpdated.current.seconds<d.time.seconds){
+                                        console.log("Here1");
+                                        truth = true;
+                                    } else if (lastUpdated.current.seconds===d.time.seconds && lastUpdated.current.nanoseconds<d.time.nanoseconds){
+                                        console.log("Here2");
+                                        truth = true;
                                     }
-                                })
-                                user_info.delta.forEach((d) => {
-                                    if (lastUpdated.current<d.time){
+                                    console.log(d.lines, truth);
+                                    if (truth===true){
                                         const tee = d.time;
-                                        delete d.time;
                                         var rev = editor.current.session.$undoManager.startNewGroup();
                                         editor.current.session.doc.applyDelta(d);
                                         editor.current.session.$undoManager.markIgnored(rev);
-                                        console.log(d.lines);
-                                        if (tee>maxTime){
+                                        if (tee.seconds>maxTime.seconds){
+                                            maxTime = tee;
+                                        } else if (tee.seconds===maxTime.seconds && tee.nanoseconds>maxTime.nanoseconds){
                                             maxTime = tee;
                                         }
                                     }
@@ -111,32 +111,50 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             applyingChanges.current = false;
         }
         
-        async function get(){
+        // async function get(){
+        //     // const ref = await getRef("temp", room_id);
+        //     // const ref = await getRef("newTemp", room_id);
+        //     const roomCode = (await getDoc(await getRef("newTemp", room_id))).data()[0];
+        //     const ref = await getRef("users", room_id);
+        //     const roomRef = await getRef("newTemp", room_id);
+        //     unsubscribe = onSnapshot(ref, (doc) => {
+        //         // 2.0: const c = doc.data()[0];
+        //         // 3.0
+        //         const c = doc.data();
+        //         console.log(c);
+
+        //         if (newUser.current==true){
+        //             // console.log(roomCode);
+        //             applyingChanges.current = true;
+        //             editor.current.session.setValue(roomCode.code);
+        //             lastUpdated.current = Timestamp.fromDate(new Date());
+        //             applyingChanges.current = false;
+        //             newUser.current = false;
+        //         } else{
+        //             // Get all user deltas and update them
+        //             getUpdates(c);
+        //         }
+        //     })
+        // }
+        async function getFunc(){
             // const ref = await getRef("temp", room_id);
             // const ref = await getRef("newTemp", room_id);
-            const roomCode = (await getDoc(await getRef("newTemp", room_id))).data()[0];
             const ref = await getRef("users", room_id);
-            const roomRef = await getRef("newTemp", room_id);
-            unsubscribe = onSnapshot(ref, (doc) => {
-                // 2.0: const c = doc.data()[0];
-                // 3.0
-                const c = doc.data();
-                console.log(c);
-
+            const code = await getCode(room_id);
+            unsubscribe = onValue(ref, (snapshot) => {
                 if (newUser.current==true){
                     // console.log(roomCode);
                     applyingChanges.current = true;
-                    editor.current.session.setValue(roomCode.code);
+                    editor.current.session.setValue(code.code);
                     lastUpdated.current = Timestamp.fromDate(new Date());
                     applyingChanges.current = false;
                     newUser.current = false;
-                } else{
-                    // Get all user deltas and update them
-                    getUpdates(c);
                 }
+                const c = snapshot.val();
+                getUpdates(c);
             })
         }
-        get();
+        getFunc();
         async function init(){
             editor.current = ace.edit("editor-ace");
             const mainSession = ace.createEditSession("");
@@ -150,12 +168,6 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 };
             })
 
-            async function applyDeltas(){
-                console.log(deltas.current);
-                await editor.current.session.doc.applyDeltas(deltas.current);
-                deltas.current = [];
-            }
-
             async function callTransForAce(delta){
                 // single
                 // await doTransactionForAce(room_id, delta, user_id);
@@ -167,7 +179,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 console.log("Calling a transaction");
                 await doTransactionForAce(room_id, delta, user_id, sessionID.current);
                 // await setDelta(room_id, delta, user_id);
-                updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time);
+                updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time, user_id);
             }
 
             editor.current.on('change', (e) => {
@@ -185,7 +197,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
         init();
         return () => {
-            unsubscribe();
+            off(unsubscribe);
         };
     }, []);
 
