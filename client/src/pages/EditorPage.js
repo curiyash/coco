@@ -232,6 +232,7 @@ const EditorPage = () => {
           setFileName(file.name);
           updateNameOfFile(room_id, file.name, session.current);
           if (onUpload.current!==null){
+            console.log("Setting");
             onUpload.current(contents);
           }
         };

@@ -27,7 +27,7 @@ import Button from '@mui/material/Button';
 import ScrollableTabsButtonAuto from './Tabs';
 import { onLog } from 'firebase/app';
 import { query, where } from "firebase/firestore";
-import { off, onValue, get } from 'firebase/database';
+import { off, onValue, get, update } from 'firebase/database';
 import Dropdown from 'react-dropdown';
 import "ace-builds/src-noconflict/theme-dracula";
 
@@ -70,7 +70,11 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     }
 
     async function onUpload(code){
+        const time = Timestamp.fromDate(new Date());
+        applyingChanges.current = true;
         editor.current.session.setValue(code);
+        updateCode(room_id, 0, editor.current.getSession().getValue(), time, user_id, true);
+        applyingChanges.current = false;
     }
 
     onUploadInit(onUpload);
@@ -82,6 +86,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         var unsubscribe2;
         var modeChange;
         var fileNameChange;
+        var uploadChange;
 
         async function getUpdates(c){
             let maxTime = lastUpdated.current;
@@ -166,6 +171,24 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             const code = await getCode(room_id);
             const modeRef = await getRef(`rooms/${room_id}/mode`);
             const fileNameRef = await getRef(`rooms/${room_id}/filename`);
+            const uploadRef = await getRef(`rooms/${room_id}/isUpload`);
+
+            uploadChange = onValue(uploadRef, (snapshot) => {
+                const status = snapshot.val();
+                if (status===true){
+                    async function gettingUpload(){
+                        console.log("Trying to call");
+                        const upload = await getCode(room_id);
+                        console.log(upload);
+                        applyingChanges.current = true;
+                        editor.current.session.setValue(upload.code);
+                        lastUpdated.current = upload.timeStamp;
+                        applyingChanges.current = false;
+                    }
+                    gettingUpload();
+                }
+            })
+
             modeChange = onValue(modeRef, (snapshot) => {
                 const mode = snapshot.val();
                 editor.current.session.setMode(`ace/mode/${mode}`);
@@ -213,7 +236,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 console.log("Calling a transaction");
                 await doTransactionForAce(room_id, delta, user_id, sessionID.current);
                 // await setDelta(room_id, delta, user_id);
-                updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time, user_id);
+                updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time, user_id, false);
             }
 
             editor.current.on('change', (e) => {
@@ -234,6 +257,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
             off(unsubscribe);
             off(modeChange);
             off(fileNameChange);
+            off(uploadChange);
         };
     }, []);
 
