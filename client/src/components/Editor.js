@@ -22,12 +22,20 @@ import {getIt, getRef, doTransaction, addUser, doTransactionForAce, updateCode, 
 import { disableNetwork, onSnapshot, serverTimestamp, Timestamp, orderBy, getDoc } from 'firebase/firestore';
 import { runTransaction } from 'firebase/firestore';
 import ace from "../../node_modules/ace-builds/src-noconflict/ace";
-import { Range } from 'ace-builds';
+import { Range, require } from 'ace-builds';
 import Button from '@mui/material/Button';
 import ScrollableTabsButtonAuto from './Tabs';
 import { onLog } from 'firebase/app';
 import { query, where } from "firebase/firestore";
 import { off, onValue, get } from 'firebase/database';
+import Dropdown from 'react-dropdown';
+import "ace-builds/src-noconflict/theme-dracula";
+
+const themes = ['ambiance', 'chaos', 'chrome', 'cloud9_day', 'cloud9_night', 'cloud9_night_low_color', 'clouds', 'clouds_midnight', 'cobalt', 'crimson_editor', 'dawn', 'dracula', 'dreamweaver', 'eclipse', 'github', 'gob', 'gruvbox', 'gruvbox_dark_hard', 'gruvbox_light_hard', 'idle_fingers', 'iplastic', 'katzenmilch', 'kr_theme', 'kuroir', 'merbivore', 'merbivore_soft', 'monokai', 'mono_industrial', 'nord_dark', 'one_dark', 'pastel_on_dark', 'solarized_dark', 'solarized_light', 'sqlserver', 'terminal', 'textmate', 'tomorrow', 'tomorrow_night', 'tomorrow_night_blue', 'tomorrow_night_bright', 'tomorrow_night_eighties', 'twilight', 'vibrant_ink', 'xcode']
+
+themes.forEach((theme) => {
+    require(`ace-builds/src-noconflict/theme-${theme}`);
+})
 
 const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, username, onLineHeightChange, fileName, onFileNameChange, cM, onSessionChange}) => {
     // Initialize CodeMirror
@@ -44,6 +52,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     const markerMap = useRef({});
     const [sessions, setSessions] = useState({'key':-1});
     const sessionID = useRef(0);
+    const [theme, setTheme] = useState('dracula');
     // const [sessionID, setSessionID] = useState(0);
 
     // const style = {
@@ -55,15 +64,22 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
     //     zIndex: 10
     // }
 
+    function _onSelectTheme(option) {
+        setTheme(option.label);
+        editor.current.setTheme(`ace/theme/${option.label}`);
+    }
+
     useEffect(() => {
         // FireBase();
         // putIt();
         var unsubscribe;
+        var unsubscribe2;
+        var modeChange;
+        var fileNameChange;
 
         async function getUpdates(c){
             let maxTime = lastUpdated.current;
             // console.log("Maxtime initialized", maxTime);
-            const room = await getRef("newTemp", room_id);
             async function mapUsers(){
                 Object.keys(c).forEach((uid, index) => {
                     const user_info = c[uid];
@@ -82,9 +98,10 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                                         console.log("Here2");
                                         truth = true;
                                     }
-                                    console.log(d.lines, truth);
+                                    console.log(d, truth);
                                     if (truth===true){
                                         const tee = d.time;
+                                        delete d.time;
                                         var rev = editor.current.session.$undoManager.startNewGroup();
                                         editor.current.session.doc.applyDelta(d);
                                         editor.current.session.$undoManager.markIgnored(rev);
@@ -139,8 +156,18 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         async function getFunc(){
             // const ref = await getRef("temp", room_id);
             // const ref = await getRef("newTemp", room_id);
-            const ref = await getRef("users", room_id);
+            const ref = await getRef(`users/${room_id}`);
             const code = await getCode(room_id);
+            const modeRef = await getRef(`rooms/${room_id}/mode`);
+            const fileNameRef = await getRef(`rooms/${room_id}/filename`);
+            modeChange = onValue(modeRef, (snapshot) => {
+                const mode = snapshot.val();
+                editor.current.session.setMode(`ace/mode/${mode}`);
+                onModeChange(mode);
+            })
+            fileNameChange = onValue(fileNameRef, (snapshot) => {
+                onFileNameChange(snapshot.val());
+            })
             unsubscribe = onValue(ref, (snapshot) => {
                 if (newUser.current==true){
                     // console.log(roomCode);
@@ -158,6 +185,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         async function init(){
             editor.current = ace.edit("editor-ace");
             const mainSession = ace.createEditSession("");
+            editor.current.setTheme(`ace/theme/dracula`);
             editor.current.setSession(mainSession);
             setSessions((prev) => {
                 const key = prev.key+1;
@@ -198,6 +226,8 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         init();
         return () => {
             off(unsubscribe);
+            off(modeChange);
+            off(fileNameChange);
         };
     }, []);
 
@@ -271,8 +301,9 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
 
   return (
     <div>
-        <ScrollableTabsButtonAuto className="tabs" sessions={sessions} editor={editor}/>
-        <Button variant="contained" onClick={addNewSession}>+</Button>
+        <Dropdown options={themes} value={theme} onChange={_onSelectTheme} placeholder="Select an option" className="dropdown"/>
+        {/* <ScrollableTabsButtonAuto className="tabs" sessions={sessions} editor={editor}/> */}
+        {/* <Button variant="contained" onClick={addNewSession}>+</Button> */}
         <div id="editor-ace">
         </div>
     </div>

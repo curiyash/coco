@@ -22,7 +22,7 @@ function App() {
           <Route path="/editor/:room_id" element={<EditorPage />}></Route>
         </Routes>
       </BrowserRouter>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js" type="text/javascript" charset="utf-8"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js" type="text/javascript" charSet="utf-8"></script>
     </>
   );
 }
