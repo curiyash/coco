@@ -70,31 +70,31 @@ const EditorPage = () => {
         }
 
         async function setMarkers(c){
-            // const markers = document.getElementsByClassName('vl');
-            // console.log(markers);
-            // if (markers){
-            //     Array.from(markers).forEach((marker) => {
-            //         marker.remove();
-            //     })
-            // }
+            const markers = document.getElementsByClassName('vl');
+            console.log(markers);
+            if (markers){
+                Array.from(markers).forEach((marker) => {
+                    marker.remove();
+                })
+            }
             if (createMarker!==null){
                 // console.log("Setting markers");
-                for (const uid in c){
-                    const marker = document.getElementById(uid);
-                    const scroller = document.getElementsByClassName("ace_scroller")[0];
-                    try{
-                        scroller.removeChild(marker);
-                    } catch{
-                        // console.log("Not there");
-                    }
+                Object.keys(c).forEach((uid) => {
+                    // const marker = document.getElementById(uid);
+                    // const scroller = document.getElementsByClassName("ace_scroller")[0];
+                    // try{
+                    //     scroller.removeChild(marker);
+                    // } catch{
+                    //     // console.log("Not there");
+                    // }
                     // console.log(marker);
                     const user = c[uid];
                     // console.log(uid);
                     // console.log(user);
                     if (location.state?.user_id!==uid){
-                        await createMarker(user, uid);
+                        createMarker(user, uid);
                     }
-                }
+                })
             }
         }
 
@@ -111,10 +111,12 @@ const EditorPage = () => {
 
             unsubscribe = onValue(ref, (snapshot) => {
                 const data = snapshot.val();
+                setMarkers(data);
                 if (data!==null){
                     const uids = Object.values(data);
+                    console.log(uids);
                     uids.sort((a, b) => {
-                        if (a<=b){
+                        if (a.username<=b.username){
                             return 1;
                         } else{
                             return -1;
@@ -265,9 +267,9 @@ const EditorPage = () => {
                 <div className='clientsList'>
                     {clients.map((client, id) => {
                         if (location.state?.user_id===id){
-                            return <Client key={id} username={client} underline={true}/>
+                            return <Client key={id} username={client.username} underline={true}/>
                         } else{
-                            return <Client key={id} username={client} underline={false}/>
+                            return <Client key={id} username={client.username} underline={false}/>
                         }
                     })}
                 </div>

@@ -246,6 +246,8 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
                 updateCode(room_id, 0, editor.current.getSession().getValue(), delta.time, user_id, false);
             }
 
+            editor.current.on('cursor')
+
             editor.current.on('change', (e) => {
                 onCodeChange(editor.current.getSession().getValue());
                 if (applyingChanges.current===false){
@@ -280,7 +282,7 @@ const Editor = ({isNew, room_id, onCodeChange, mode, onModeChange, user_id, user
         c.innerText = user.username;
         const pos = editor.current.renderer.textToScreenCoordinates(user.line, 0);
         // console.log(pos.pageY);
-        const y = pos.pageY-84.5;
+        const y = pos.pageY-39.2;
         if (user_id in markerMap.current){
             // console.log(markerMap);
             // console.log(user_id);
