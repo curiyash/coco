@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { getDatabase, set, ref, update, remove, push, get, child } from "firebase/database";
 
 // TODO: Replace the following with your app's Firebase project configuration
-// See: https://firebase.google.com/docs/web/learn-more#config-object
+// See: https://firebase.google.com/docs/web/learn-more#config-objecta
 const firebaseConfig = {
     apiKey: process.env.REACT_APP_APIKEY,
     authDomain: process.env.REACT_APP_AUTHDOMAIN,
